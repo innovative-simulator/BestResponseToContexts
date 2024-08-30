@@ -49,7 +49,7 @@ people-own [
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 c-beliefs-own [
-  cb-belief
+  cb-degree
 ]
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -220,25 +220,16 @@ to-report new-person
   create-people 1 [
     set rep-obj self
     set shape "person"
+    set color grey
     set pp-num-interactions 0
     set pp-total-payoff 0
     set pp-freqs n-values 4 [-> 0]
+
     ;setxy random-xcor random-ycor
-    let clust-weight (clustering-weight + 1) ; Turn weight into alpha and beta parameters
-    setxy (
-      (ifelse-value (100 * count people < Perc-Right-Hand-Side * Number-Of-People) [1] [-1]) *
-      world-width * 0.5 * random-beta clust-weight clust-weight
-    ) (
-      (ifelse-value (1 = (count people) mod 2) [1] [-1]) *
-      world-height * 0.5 * random-beta clust-weight clust-weight
-    )
-;    setxy (
-;      (-1 + (2 * ((count people) mod 2))) *
-;      world-width * 0.5 * random-beta clust-weight clust-weight
-;    ) (
-;      (-1 + (2 * int (((count people) mod 4) / 2))) *
-;      world-height * 0.5 * random-beta clust-weight clust-weight
-;    )
+    setup-attributes-random
+    ;setup-attributes-regular-grid
+    ;setup-attributes-regular-offset
+
     repeat number-of-c-beliefs [
       create-c-link-to new-c-belief [
         set hidden? Hide-C-Links-And-c-beliefs?
@@ -253,6 +244,38 @@ to-report new-person
   ]
   report rep-obj
 end
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+to setup-attributes-random
+    let clust-weight (clustering-weight + 1) ; Turn weight into alpha and beta parameters
+    setxy (
+      (ifelse-value (100 * count people < Perc-Right-Hand-Side * Number-Of-People) [1] [-1]) *
+      world-width * 0.5 * random-beta clust-weight clust-weight
+    ) (
+      (ifelse-value (1 = (count people) mod 2) [1] [-1]) *
+      world-height * 0.5 * random-beta clust-weight clust-weight
+    )
+end
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+to setup-attributes-regular-grid
+  let num-cols ceiling sqrt Number-Of-People
+  let num-rows ceiling (Number-Of-People / num-cols)
+  let cur-item -1 + count people
+  setxy (world-width * (cur-item mod num-cols) / num-cols) (world-height * (int (cur-item / num-cols)) / num-rows)
+end
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+to setup-attributes-regular-offset
+  let num-cols ceiling sqrt Number-Of-People
+  let num-rows ceiling (Number-Of-People / num-cols)
+  let cur-item -1 + count people
+  setxy (world-width * ((ifelse-value (0 = (int (cur-item / num-cols)) mod 2) [0] [0.5]) + cur-item mod num-cols) / num-cols) (world-height * (int (cur-item / num-cols)) / num-rows)
+end
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -324,7 +347,7 @@ to-report new-c-belief
     set shape "circle"
     set size 0.5
     setxy random-xcor random-ycor
-    set cb-belief msne
+    set cb-degree msne
   ]
   report rep-obj
 end
@@ -484,14 +507,14 @@ end
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 to-report best-action-against [given-opponent]
-  report best-response [cb-belief] of best-c-belief-against given-opponent
+  report best-response [cb-degree] of best-c-belief-against given-opponent
 end
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 to choose-action-against [given-opponent]
   set pp-current-c-belief best-c-belief-against given-opponent
-  set pp-action best-response [cb-belief] of pp-current-c-belief
+  set pp-action best-response [cb-degree] of pp-current-c-belief
   if epsilon > 0 [ ; Chance of exploring alternative actions?
     if epsilon > random-float 100 [
       set pp-action 1 - pp-action
@@ -503,9 +526,9 @@ end
 
 to update-belief-against [given-opponent]
   ask pp-current-c-belief [
-    set cb-belief 0.01 * (
+    set cb-degree 0.01 * (
       ((100 - memory) * 100 * [pp-action] of given-opponent) +
-      (memory * cb-belief)
+      (memory * cb-degree)
     )
     c-beliefs-recolor-by-belief
   ]
@@ -561,15 +584,15 @@ end
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 to c-beliefs-recolor-by-belief
-  ;set color (color mod 10) + 0.1 * cb-belief
+  ;set color (color mod 10) + 0.1 * cb-degree
   (ifelse
-    (cb-belief > msne + MSNE-Margin) [set color Hawk-Color]
-    (cb-belief < msne - MSNE-Margin) [set color Dove-Color]
+    (cb-degree > msne + MSNE-Margin) [set color Hawk-Color]
+    (cb-degree < msne - MSNE-Margin) [set color Dove-Color]
     [set color MSNE-Color]
   )
   ask my-in-c-links [set color [color] of end1]
   ;ask my-c-links [set color [color] of myself]
-  ;set color (color mod 10) + 0.1 * mean [cb-belief] of out-c-link-neighbors
+  ;set color (color mod 10) + 0.1 * mean [cb-degree] of out-c-link-neighbors
 end
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -901,39 +924,39 @@ end
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 to-report perc-best-response-dove
-  report 100 * (count c-beliefs with [cb-belief > msne + msne-margin]) / count c-beliefs
+  report 100 * (count c-beliefs with [cb-degree > msne + msne-margin]) / count c-beliefs
 end
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 to-report perc-best-response-msne
-  report 100 * (count c-beliefs with [(cb-belief <= msne + msne-margin) and (cb-belief >= msne - msne-margin)]) / count c-beliefs
+  report 100 * (count c-beliefs with [(cb-degree <= msne + msne-margin) and (cb-degree >= msne - msne-margin)]) / count c-beliefs
 end
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 to-report perc-best-response-hawk
-  report 100 * (count c-beliefs with [cb-belief < msne - msne-margin]) / count c-beliefs
+  report 100 * (count c-beliefs with [cb-degree < msne - msne-margin]) / count c-beliefs
 end
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 to-report perc-beliefs-between [lower-b upper-b]
-  report 100 * (count c-beliefs with [(cb-belief < upper-b) and (cb-belief >= lower-b)]) / count c-beliefs
+  report 100 * (count c-beliefs with [(cb-degree < upper-b) and (cb-degree >= lower-b)]) / count c-beliefs
 end
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 to-report pp-always-hawk?
   ; Would person play Hawk in every context?
-  report not any? out-c-link-neighbors with [cb-belief >= msne]
+  report not any? out-c-link-neighbors with [cb-degree >= msne]
 end
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 to-report pp-always-dove?
   ; Would person play Dove in every context?
-  report not any? out-c-link-neighbors with [cb-belief <= msne]
+  report not any? out-c-link-neighbors with [cb-degree <= msne]
 end
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1347,7 +1370,7 @@ BUTTON
 552
 558
 Hide / Unhide C-Links
-foreach sorted-people [pp ->\nask pp [\nask my-c-links [\nset hidden? not hidden?\n]\n]\n]
+foreach sorted-people [pp ->\nask pp [\nforeach sort my-c-links [cl -> ask cl [\nset hidden? not hidden?\n]]\n]\n]
 NIL
 1
 T
@@ -1392,7 +1415,7 @@ BUTTON
 562
 523
 Hide / Unhide C-Beliefs
-foreach sorted-people [pp ->\nask pp [\nask my-c-links [\nask end2 [set hidden? not hidden?]\n]\n]\n]
+foreach sorted-people [pp ->\nask pp [\nforeach sort my-c-links [cl -> ask cl [\nask end2 [set hidden? not hidden?]\n]]\n]\n]
 NIL
 1
 T
@@ -2545,6 +2568,10 @@ The game chosen here is __Hawk-Dove__, or Chicken. Hawk-Dove, in common with __M
  
 
 This program (C) Christopher J Watts, 2024.
+
+This model accompanies the paper:
+
+Watts, Christopher J. & S. M. Amadae (2024) "Context-sensitive game players: How context-specific expectations affect the emergence of group conflict, peace, and dominance in Hawk-Dove and Nash Demand games". Submitted to the Social Simulation Conference 2024, Krakow, Poland.
 
 ## HOW IT WORKS
 
