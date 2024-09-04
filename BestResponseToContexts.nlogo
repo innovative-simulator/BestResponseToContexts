@@ -24,6 +24,8 @@ globals [
   ; Random Number Seeds:
   previous-seed-setup
   previous-seed-go
+
+  time-of-shock
 ]
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -50,6 +52,7 @@ people-own [
 
 c-beliefs-own [
   cb-degree
+  cb-date-of-activation
 ]
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -71,6 +74,7 @@ to setup
   set current-person nobody
 
   reset-ticks
+  set time-of-shock Ticks-Until-Shock
 
   set num-by-i-type n-values 4 [-> 0]
 
@@ -79,6 +83,7 @@ to setup
   update-time-series-plots-additionals
   setup-mfi-network
   calc-mfi-network-components
+
   setup-rng "seed-go"
 end
 
@@ -227,6 +232,7 @@ to-report new-person
 
     ;setxy random-xcor random-ycor
     setup-attributes-random
+    ;setup-attributes-random-patch
     ;setup-attributes-regular-grid
     ;setup-attributes-regular-offset
 
@@ -256,6 +262,14 @@ to setup-attributes-random
       (ifelse-value (1 = (count people) mod 2) [1] [-1]) *
       world-height * 0.5 * random-beta clust-weight clust-weight
     )
+end
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+to setup-attributes-random-patch
+  ; Needs count patches >= number-of-people
+  ; May be painfully slow
+  move-to one-of patches with [not any? people-here]
 end
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -348,6 +362,7 @@ to-report new-c-belief
     set size 0.5
     setxy random-xcor random-ycor
     set cb-degree msne
+    set cb-date-of-activation -1
   ]
   report rep-obj
 end
@@ -451,13 +466,13 @@ to go
     ask ego [choose-action-against alter]
     ask alter [choose-action-against ego]
     ask ego [
-      update-belief-against alter
+      update-degree-of-belief-against alter
       update-c-belief-against alter
       update-pp-stats [pp-action] of alter
       run recolor-person-method
     ]
     ask alter [
-      update-belief-against ego
+      update-degree-of-belief-against ego
       update-c-belief-against ego
       update-pp-stats [pp-action] of ego
       run recolor-person-method
@@ -486,6 +501,11 @@ to go
     setup-mfi-network
     calc-mfi-network-components
   ]
+
+  if ticks = time-of-shock [
+    simulate-shock
+  ]
+
 end
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -524,13 +544,14 @@ end
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-to update-belief-against [given-opponent]
+to update-degree-of-belief-against [given-opponent]
   ask pp-current-c-belief [
     set cb-degree 0.01 * (
       ((100 - memory) * 100 * [pp-action] of given-opponent) +
       (memory * cb-degree)
     )
     c-beliefs-recolor-by-belief
+    set cb-date-of-activation ticks
   ]
 
 end
@@ -713,6 +734,16 @@ to recolor-patch-by-c-beliefs
   if any? neighbors with [any? c-beliefs-here] [
     set pcolor -3 + one-of modes reduce sentence map [cb -> [color] of cb] [c-beliefs-here] of neighbors
     stop
+  ]
+end
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+to simulate-shock
+  run Shock-Code
+  if Shock-Repeats? [
+    set time-of-shock ticks + Ticks-Until-Shock
   ]
 end
 
@@ -2554,6 +2585,79 @@ Epsilon
 %
 HORIZONTAL
 
+TEXTBOX
+850
+825
+1000
+845
+Simulating Shocks:
+16
+0.0
+1
+
+INPUTBOX
+850
+850
+1002
+910
+Ticks-Until-Shock
+-1.0
+1
+0
+Number
+
+SWITCH
+850
+915
+992
+948
+Shock-Repeats?
+Shock-Repeats?
+0
+1
+-1000
+
+CHOOSER
+850
+955
+1172
+1000
+Shock-Code
+Shock-Code
+"" "set Base-MSNE 100 - Base-MSNE" "set Inertia 100 - Inertia" "set Memory 100 - Memory" "set Memory 100 - Memory set Inertia 100 - Inertia"
+0
+
+MONITOR
+850
+1010
+942
+1055
+NIL
+Time-Of-Shock
+17
+1
+11
+
+TEXTBOX
+1010
+855
+1130
+896
+To prevent any shocks, set Ticks-Until-Shock to a value < 0.\n
+11
+0.0
+1
+
+TEXTBOX
+1000
+915
+1150
+941
+Shock repeats every Ticks-Until-Shock.
+11
+0.0
+1
+
 @#$#@#$#@
 # Play Best Response Given Context-Dependent Beliefs
 ## WHAT IS IT?
@@ -3053,6 +3157,15 @@ NetLogo 6.2.2
     <enumeratedValueSet variable="Ticks-Between-Plot-Updates">
       <value value="10"/>
     </enumeratedValueSet>
+    <enumeratedValueSet variable="Ticks-Until-Shock">
+      <value value="-1"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Shock-Repeats?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Shock-Code">
+      <value value="&quot;&quot;"/>
+    </enumeratedValueSet>
     <enumeratedValueSet variable="Seed-Setup">
       <value value="0"/>
     </enumeratedValueSet>
@@ -3166,6 +3279,15 @@ NetLogo 6.2.2
     </enumeratedValueSet>
     <enumeratedValueSet variable="Ticks-Between-Plot-Updates">
       <value value="10"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Ticks-Until-Shock">
+      <value value="-1"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Shock-Repeats?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Shock-Code">
+      <value value="&quot;&quot;"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="Seed-Setup">
       <value value="0"/>
@@ -3291,6 +3413,15 @@ NetLogo 6.2.2
     <enumeratedValueSet variable="Ticks-Between-Plot-Updates">
       <value value="10"/>
     </enumeratedValueSet>
+    <enumeratedValueSet variable="Ticks-Until-Shock">
+      <value value="-1"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Shock-Repeats?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Shock-Code">
+      <value value="&quot;&quot;"/>
+    </enumeratedValueSet>
     <enumeratedValueSet variable="Seed-Setup">
       <value value="0"/>
     </enumeratedValueSet>
@@ -3395,6 +3526,15 @@ NetLogo 6.2.2
     </enumeratedValueSet>
     <enumeratedValueSet variable="Ticks-Between-Plot-Updates">
       <value value="10"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Ticks-Until-Shock">
+      <value value="-1"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Shock-Repeats?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Shock-Code">
+      <value value="&quot;&quot;"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="Seed-Setup">
       <value value="0"/>
@@ -3513,6 +3653,15 @@ NetLogo 6.2.2
     <enumeratedValueSet variable="Ticks-Between-Plot-Updates">
       <value value="10"/>
     </enumeratedValueSet>
+    <enumeratedValueSet variable="Ticks-Until-Shock">
+      <value value="-1"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Shock-Repeats?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Shock-Code">
+      <value value="&quot;&quot;"/>
+    </enumeratedValueSet>
     <enumeratedValueSet variable="Seed-Setup">
       <value value="0"/>
     </enumeratedValueSet>
@@ -3617,6 +3766,15 @@ NetLogo 6.2.2
     </enumeratedValueSet>
     <enumeratedValueSet variable="Ticks-Between-Plot-Updates">
       <value value="10"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Ticks-Until-Shock">
+      <value value="-1"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Shock-Repeats?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Shock-Code">
+      <value value="&quot;&quot;"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="Seed-Setup">
       <value value="0"/>
@@ -3733,6 +3891,15 @@ setup</setup>
     </enumeratedValueSet>
     <enumeratedValueSet variable="Ticks-Between-Plot-Updates">
       <value value="10"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Ticks-Until-Shock">
+      <value value="-1"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Shock-Repeats?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Shock-Code">
+      <value value="&quot;&quot;"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="Seed-Setup">
       <value value="0"/>
