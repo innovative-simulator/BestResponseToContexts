@@ -223,6 +223,7 @@ to-report new-person
   let rep-obj nobody
 
   create-people 1 [
+    set hidden? hide-people?
     set rep-obj self
     set shape "person"
     set color grey
@@ -238,7 +239,7 @@ to-report new-person
 
     repeat number-of-c-beliefs [
       create-c-link-to new-c-belief [
-        set hidden? Hide-C-Links-And-c-beliefs?
+        set hidden? Hide-C-Links?
         set color [color] of end1
       ]
     ]
@@ -356,7 +357,7 @@ end
 to-report new-c-belief
   let rep-obj nobody
   hatch-c-beliefs 1 [
-    set hidden? Hide-C-Links-And-c-beliefs?
+    set hidden? Hide-C-Beliefs?
     set rep-obj self
     set shape "circle"
     set size 0.5
@@ -1414,11 +1415,11 @@ NIL
 
 SWITCH
 400
-750
-607
-783
-Hide-C-Links-And-C-Beliefs?
-Hide-C-Links-And-C-Beliefs?
+900
+540
+933
+Hide-C-Links?
+Hide-C-Links?
 0
 1
 -1000
@@ -2658,6 +2659,38 @@ Shock repeats every Ticks-Until-Shock.
 0.0
 1
 
+SWITCH
+400
+865
+540
+898
+Hide-C-Beliefs?
+Hide-C-Beliefs?
+0
+1
+-1000
+
+SWITCH
+400
+830
+540
+863
+Hide-People?
+Hide-People?
+1
+1
+-1000
+
+TEXTBOX
+400
+800
+585
+831
+Initially Hide Objects and Links?
+13
+0.0
+1
+
 @#$#@#$#@
 # Play Best Response Given Context-Dependent Beliefs
 ## WHAT IS IT?
@@ -3145,9 +3178,6 @@ NetLogo 6.2.2
     <enumeratedValueSet variable="HD-Value">
       <value value="10"/>
     </enumeratedValueSet>
-    <enumeratedValueSet variable="Hide-C-Links-And-C-Beliefs?">
-      <value value="true"/>
-    </enumeratedValueSet>
     <enumeratedValueSet variable="MFI-Network-Radius">
       <value value="4"/>
     </enumeratedValueSet>
@@ -3267,9 +3297,6 @@ NetLogo 6.2.2
     </enumeratedValueSet>
     <enumeratedValueSet variable="HD-Value">
       <value value="10"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="Hide-C-Links-And-C-Beliefs?">
-      <value value="true"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="MFI-Network-Radius">
       <value value="4"/>
@@ -3401,9 +3428,6 @@ NetLogo 6.2.2
     <enumeratedValueSet variable="HD-Value">
       <value value="10"/>
     </enumeratedValueSet>
-    <enumeratedValueSet variable="Hide-C-Links-And-C-Beliefs?">
-      <value value="true"/>
-    </enumeratedValueSet>
     <enumeratedValueSet variable="MFI-Network-Radius">
       <value value="4"/>
     </enumeratedValueSet>
@@ -3514,9 +3538,6 @@ NetLogo 6.2.2
     </enumeratedValueSet>
     <enumeratedValueSet variable="HD-Value">
       <value value="10"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="Hide-C-Links-And-C-Beliefs?">
-      <value value="true"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="MFI-Network-Radius">
       <value value="4"/>
@@ -3641,9 +3662,6 @@ NetLogo 6.2.2
     <enumeratedValueSet variable="HD-Value">
       <value value="10"/>
     </enumeratedValueSet>
-    <enumeratedValueSet variable="Hide-C-Links-And-C-Beliefs?">
-      <value value="true"/>
-    </enumeratedValueSet>
     <enumeratedValueSet variable="MFI-Network-Radius">
       <value value="4"/>
     </enumeratedValueSet>
@@ -3754,9 +3772,6 @@ NetLogo 6.2.2
     </enumeratedValueSet>
     <enumeratedValueSet variable="HD-Value">
       <value value="10"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="Hide-C-Links-And-C-Beliefs?">
-      <value value="true"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="MFI-Network-Radius">
       <value value="4"/>
@@ -3879,9 +3894,6 @@ setup</setup>
     </enumeratedValueSet>
     <enumeratedValueSet variable="HD-Value">
       <value value="10"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="Hide-C-Links-And-C-Beliefs?">
-      <value value="true"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="MFI-Network-Radius">
       <value value="4"/>
