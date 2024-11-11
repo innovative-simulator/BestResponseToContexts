@@ -231,11 +231,7 @@ to-report new-person
     set pp-total-payoff 0
     set pp-freqs n-values 4 [-> 0]
 
-    ;setxy random-xcor random-ycor
-    setup-attributes-random
-    ;setup-attributes-random-patch
-    ;setup-attributes-regular-grid
-    ;setup-attributes-regular-offset
+    setup-attributes
 
     repeat number-of-c-beliefs [
       create-c-link-to new-c-belief [
@@ -254,7 +250,19 @@ end
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-to setup-attributes-random
+to setup-attributes
+  (ifelse
+    initial-attributes = "Random" [setxy random-xcor random-ycor]
+    initial-attributes = "4 Clusters" [setup-attributes-four-clusters]
+    initial-attributes = "Random-Patch" [setup-attributes-random-patch]
+    initial-attributes = "Square Grid" [setup-attributes-square-grid]
+    initial-attributes = "Triangular Grid" [setup-attributes-triangular-grid]
+  )
+end
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+to setup-attributes-four-clusters
     let clust-weight (clustering-weight + 1) ; Turn weight into alpha and beta parameters
     setxy (
       (ifelse-value (100 * count people < Perc-Right-Hand-Side * Number-Of-People) [1] [-1]) *
@@ -275,7 +283,7 @@ end
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-to setup-attributes-regular-grid
+to setup-attributes-square-grid
   let num-cols ceiling sqrt Number-Of-People
   let num-rows ceiling (Number-Of-People / num-cols)
   let cur-item -1 + count people
@@ -284,7 +292,7 @@ end
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-to setup-attributes-regular-offset
+to setup-attributes-triangular-grid
   let num-cols ceiling sqrt Number-Of-People
   let num-rows ceiling (Number-Of-People / num-cols)
   let cur-item -1 + count people
@@ -853,6 +861,7 @@ to update-time-series-plots-additionals
   set-current-plot-pen "Noise"
   plotxy ticks noise-payoff
   set-current-plot-pen "Exp = MSNE"
+  ;set-plot-pen-color ifelse-value (0 = ticks mod (2 * Ticks-Between-Plot-Updates)) [violet] [white]
   plotxy ticks msne-exp-payoff
 
   set-current-plot "Self-Hawkishness by MFI"
@@ -1804,9 +1813,9 @@ NIL
 
 MONITOR
 245
-385
+445
 355
-430
+490
 NIL
 Mouse-Patch
 17
@@ -1815,9 +1824,9 @@ Mouse-Patch
 
 BUTTON
 270
-295
+355
 350
-328
+388
 Highlight
 highlight-current-person
 T
@@ -1832,9 +1841,9 @@ NIL
 
 MONITOR
 260
-335
+395
 355
-380
+440
 NIL
 Current-Person
 17
@@ -1843,9 +1852,9 @@ Current-Person
 
 BUTTON
 270
-260
+320
 350
-293
+353
 Move
 move-current-person
 T
@@ -2691,6 +2700,16 @@ Initially Hide Objects and Links?
 0.0
 1
 
+CHOOSER
+210
+255
+348
+300
+Initial-Attributes
+Initial-Attributes
+"Random" "4 Clusters" "Square Grid" "Triangular Grid" "Random-Patch"
+1
+
 @#$#@#$#@
 # Play Best Response Given Context-Dependent Beliefs
 ## WHAT IS IT?
@@ -3160,6 +3179,9 @@ NetLogo 6.2.2
     <enumeratedValueSet variable="Initial-C-Beliefs">
       <value value="&quot;Random (x, y)&quot;"/>
     </enumeratedValueSet>
+    <enumeratedValueSet variable="Initial-Attributes">
+      <value value="&quot;4 Clusters&quot;"/>
+    </enumeratedValueSet>
     <enumeratedValueSet variable="Perc-Right-Hand-Side">
       <value value="50"/>
     </enumeratedValueSet>
@@ -3279,6 +3301,9 @@ NetLogo 6.2.2
     </enumeratedValueSet>
     <enumeratedValueSet variable="Initial-C-Beliefs">
       <value value="&quot;Random (x, y)&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Initial-Attributes">
+      <value value="&quot;4 Clusters&quot;"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="Perc-Right-Hand-Side">
       <value value="50"/>
@@ -3410,6 +3435,9 @@ NetLogo 6.2.2
       <value value="&quot;Random (x, y)&quot;"/>
       <value value="&quot;At Other Agents&quot;"/>
     </enumeratedValueSet>
+    <enumeratedValueSet variable="Initial-Attributes">
+      <value value="&quot;4 Clusters&quot;"/>
+    </enumeratedValueSet>
     <enumeratedValueSet variable="Perc-Right-Hand-Side">
       <value value="50"/>
     </enumeratedValueSet>
@@ -3520,6 +3548,9 @@ NetLogo 6.2.2
     </enumeratedValueSet>
     <enumeratedValueSet variable="Initial-C-Beliefs">
       <value value="&quot;Random (x, y)&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Initial-Attributes">
+      <value value="&quot;4 Clusters&quot;"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="Perc-Right-Hand-Side">
       <value value="50"/>
@@ -3644,6 +3675,9 @@ NetLogo 6.2.2
     <enumeratedValueSet variable="Initial-C-Beliefs">
       <value value="&quot;Random (x, y)&quot;"/>
     </enumeratedValueSet>
+    <enumeratedValueSet variable="Initial-Attributes">
+      <value value="&quot;4 Clusters&quot;"/>
+    </enumeratedValueSet>
     <enumeratedValueSet variable="Perc-Right-Hand-Side">
       <value value="50"/>
     </enumeratedValueSet>
@@ -3754,6 +3788,9 @@ NetLogo 6.2.2
     </enumeratedValueSet>
     <enumeratedValueSet variable="Initial-C-Beliefs">
       <value value="&quot;Random (x, y)&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Initial-Attributes">
+      <value value="&quot;4 Clusters&quot;"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="Perc-Right-Hand-Side">
       <value value="50"/>
@@ -3876,6 +3913,9 @@ setup</setup>
     </enumeratedValueSet>
     <enumeratedValueSet variable="Initial-C-Beliefs">
       <value value="&quot;Random (x, y)&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Initial-Attributes">
+      <value value="&quot;4 Clusters&quot;"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="Perc-Right-Hand-Side">
       <value value="50"/>
