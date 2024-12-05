@@ -70,6 +70,7 @@ to setup
 ;  set payoffs-list payoffs
   setup-rng "seed-setup"
   setup-people
+  rescale-mfi-network-radius
   reposition-c-beliefs
   set current-person nobody
 
@@ -1055,6 +1056,17 @@ end
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Link to other people within a given radius if they share your MFI
+;; MFI Network has no impact on game and learning mechanisms
+;; It is for visualisation purposes only.
+
+to rescale-mfi-network-radius
+  ; Run this if you change population size.
+  ; Otherwise, network density will vary too much.
+  set MFI-Network-Radius 4 * sqrt (200 / number-of-people)
+end
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 to setup-mfi-network
   ; Link agents with same most-frequent-interaction type if within a given radius of each other
@@ -1273,7 +1285,7 @@ INPUTBOX
 167
 150
 Number-Of-People
-200.0
+36.0
 1
 0
 Number
@@ -1720,7 +1732,7 @@ Clustering-Weight
 Clustering-Weight
 0
 10
-0.0
+2.0
 1
 1
 NIL
@@ -2066,7 +2078,7 @@ MFI-Network-Radius
 MFI-Network-Radius
 0
 12
-4.0
+9.428090415820634
 .25
 1
 Patches
@@ -2468,7 +2480,7 @@ BUTTON
 1247
 813
 Re-Scale Radius
-set MFI-Network-Radius 4 * sqrt (200 / number-of-people)
+rescale-mfi-network-radius
 NIL
 1
 T
@@ -2634,7 +2646,7 @@ CHOOSER
 1000
 Shock-Code
 Shock-Code
-"" "set Base-MSNE 100 - Base-MSNE" "set Inertia 100 - Inertia" "set Memory 100 - Memory" "set Memory 100 - Memory set Inertia 100 - Inertia"
+"" "set Base-MSNE 100 - Base-MSNE" "set Inertia 100 - Inertia" "set Memory 100 - Memory" "set Memory 100 - Memory set Inertia 100 - Inertia" "set Epsilon ifelse-value (Epsilon = 0) [5] [0]"
 0
 
 MONITOR
@@ -2708,7 +2720,7 @@ CHOOSER
 Initial-Person-Attributes
 Initial-Person-Attributes
 "Random" "4 Clusters" "Square Grid" "Triangular Grid" "Random-Patch"
-1
+3
 
 @#$#@#$#@
 # Play Best Response Given Context-Dependent Beliefs
@@ -3836,8 +3848,7 @@ NetLogo 6.2.2
     </enumeratedValueSet>
   </experiment>
   <experiment name="experiment_Pop" repetitions="10" sequentialRunOrder="false" runMetricsEveryStep="false">
-    <setup>set MFI-Network-Radius 4 * sqrt (200 / number-of-people)
-setup</setup>
+    <setup>setup</setup>
     <go>go</go>
     <final>do-final-stats</final>
     <metric>previous-seed-setup</metric>
@@ -3922,6 +3933,132 @@ setup</setup>
     </enumeratedValueSet>
     <enumeratedValueSet variable="Clustering-Weight">
       <value value="0"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Statistics-Retention">
+      <value value="90"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Run-Length">
+      <value value="2000"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="MSNE-Margin">
+      <value value="5"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="HD-Value">
+      <value value="10"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="MFI-Network-Radius">
+      <value value="4"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Ticks-Between-Network-Updates">
+      <value value="100"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Ticks-Between-Plot-Updates">
+      <value value="10"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Ticks-Until-Shock">
+      <value value="-1"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Shock-Repeats?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Shock-Code">
+      <value value="&quot;&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Seed-Setup">
+      <value value="0"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Seed-Go">
+      <value value="0"/>
+    </enumeratedValueSet>
+  </experiment>
+  <experiment name="experiment_InitAttribs" repetitions="10" sequentialRunOrder="false" runMetricsEveryStep="false">
+    <setup>setup</setup>
+    <go>go</go>
+    <final>do-final-stats</final>
+    <metric>previous-seed-setup</metric>
+    <metric>previous-seed-go</metric>
+    <metric>timer</metric>
+    <metric>hd-cost-of-conflict</metric>
+    <metric>msne-exp-payoff</metric>
+    <metric>noise-payoff</metric>
+    <metric>item 0 payoffs</metric>
+    <metric>item 1 payoffs</metric>
+    <metric>item 2 payoffs</metric>
+    <metric>item 3 payoffs</metric>
+    <metric>count people</metric>
+    <metric>count C-Beliefs</metric>
+    <metric>perc-played-hawk</metric>
+    <metric>perc-played-dove</metric>
+    <metric>perc-interaction-type 0</metric>
+    <metric>perc-interaction-type 1</metric>
+    <metric>perc-interaction-type 2</metric>
+    <metric>perc-interaction-type 3</metric>
+    <metric>mean-payoff-by-mfi 0</metric>
+    <metric>mean-payoff-by-mfi 1</metric>
+    <metric>mean-payoff-by-mfi 2</metric>
+    <metric>mean-payoff-by-mfi 3</metric>
+    <metric>perc-events-dd</metric>
+    <metric>perc-events-hh</metric>
+    <metric>perc-events-dhhd</metric>
+    <metric>perc-always-hawk</metric>
+    <metric>perc-play-mixture</metric>
+    <metric>perc-always-dove</metric>
+    <metric>perc-best-response-dove</metric>
+    <metric>perc-best-response-msne</metric>
+    <metric>perc-best-response-hawk</metric>
+    <metric>perc-beliefs-between 0 20</metric>
+    <metric>perc-beliefs-between 20 40</metric>
+    <metric>perc-beliefs-between 40 60</metric>
+    <metric>perc-beliefs-between 60 80</metric>
+    <metric>perc-beliefs-between 80 101</metric>
+    <metric>num-mfi-components-larger-than 0</metric>
+    <metric>num-mfi-components-larger-than 1</metric>
+    <metric>num-mfi-components-larger-than 5</metric>
+    <metric>first first mfi-component-sizes</metric>
+    <metric>last first mfi-component-sizes</metric>
+    <metric>perc-self-hawkish-mfi-type 0</metric>
+    <metric>perc-self-hawkish-mfi-type 1</metric>
+    <metric>perc-self-hawkish-mfi-type 2</metric>
+    <metric>perc-self-hawkish-mfi-type 3</metric>
+    <enumeratedValueSet variable="Base-MSNE">
+      <value value="90"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Number-Of-C-Beliefs">
+      <value value="4"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Memory">
+      <value value="90"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Inertia">
+      <value value="90"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Epsilon">
+      <value value="0"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Number-Of-People">
+      <value value="36"/>
+      <value value="64"/>
+      <value value="100"/>
+      <value value="144"/>
+      <value value="196"/>
+      <value value="256"/>
+      <value value="400"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Initial-C-Belief-Positions">
+      <value value="&quot;Random&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Initial-Person-Attributes">
+      <value value="&quot;Random&quot;"/>
+      <value value="&quot;4 Clusters&quot;"/>
+      <value value="&quot;Square Grid&quot;"/>
+      <value value="&quot;Triangular Grid&quot;"/>
+      <value value="&quot;Random-Patch&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Perc-Right-Hand-Side">
+      <value value="50"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Clustering-Weight">
+      <value value="2"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="Statistics-Retention">
       <value value="90"/>
