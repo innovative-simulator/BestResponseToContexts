@@ -231,7 +231,7 @@ to-report new-person
     set pp-total-payoff 0
     set pp-freqs n-values 4 [-> 0]
 
-    setup-attributes
+    setup-person-attributes
 
     repeat number-of-c-beliefs [
       create-c-link-to new-c-belief [
@@ -250,19 +250,19 @@ end
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-to setup-attributes
+to setup-person-attributes
   (ifelse
-    initial-attributes = "Random" [setxy random-xcor random-ycor]
-    initial-attributes = "4 Clusters" [setup-attributes-four-clusters]
-    initial-attributes = "Random-Patch" [setup-attributes-random-patch]
-    initial-attributes = "Square Grid" [setup-attributes-square-grid]
-    initial-attributes = "Triangular Grid" [setup-attributes-triangular-grid]
+    Initial-Person-Attributes = "Random" [setxy random-xcor random-ycor]
+    Initial-Person-Attributes = "4 Clusters" [setup-person-attributes-four-clusters]
+    Initial-Person-Attributes = "Random-Patch" [setup-person-attributes-random-patch]
+    Initial-Person-Attributes = "Square Grid" [setup-person-attributes-square-grid]
+    Initial-Person-Attributes = "Triangular Grid" [setup-person-attributes-triangular-grid]
   )
 end
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-to setup-attributes-four-clusters
+to setup-person-attributes-four-clusters
     let clust-weight (clustering-weight + 1) ; Turn weight into alpha and beta parameters
     setxy (
       (ifelse-value (100 * count people < Perc-Right-Hand-Side * Number-Of-People) [1] [-1]) *
@@ -275,7 +275,7 @@ end
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-to setup-attributes-random-patch
+to setup-person-attributes-random-patch
   ; Needs count patches >= number-of-people
   ; May be painfully slow
   move-to one-of patches with [not any? people-here]
@@ -283,7 +283,7 @@ end
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-to setup-attributes-square-grid
+to setup-person-attributes-square-grid
   let num-cols ceiling sqrt Number-Of-People
   let num-rows ceiling (Number-Of-People / num-cols)
   let cur-item -1 + count people
@@ -292,7 +292,7 @@ end
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-to setup-attributes-triangular-grid
+to setup-person-attributes-triangular-grid
   let num-cols ceiling sqrt Number-Of-People
   let num-rows ceiling (Number-Of-People / num-cols)
   let cur-item -1 + count people
@@ -304,11 +304,11 @@ end
 
 to reposition-c-beliefs
   (ifelse
-    (Initial-C-Beliefs = "Random (x, y)") [] ; Default already
-    (Initial-C-Beliefs = "Ring Around (0, 0)") [homogenous-ringed-c-beliefs (min (list world-width world-height)) / 3]
-    (Initial-C-Beliefs = "Ring Around Agent") [heterogeneous-ringed-c-beliefs (min (list world-width world-height)) / 3]
-    (Initial-C-Beliefs = "At Agent") [heterogeneous-ringed-c-beliefs 0]
-    (Initial-C-Beliefs = "At Other Agents") [match-c-beliefs-to-people]
+    (Initial-C-Belief-Positions = "Random") [] ; Default already
+    (Initial-C-Belief-Positions = "Ring Around (0, 0)") [homogenous-ringed-c-beliefs (min (list world-width world-height)) / 3]
+    (Initial-C-Belief-Positions = "Ring Around Agent") [heterogeneous-ringed-c-beliefs (min (list world-width world-height)) / 3]
+    (Initial-C-Belief-Positions = "At Agent") [heterogeneous-ringed-c-beliefs 0]
+    (Initial-C-Belief-Positions = "At Other Agents") [match-c-beliefs-to-people]
     [user-message "WARNING! Could not identify procedure for Initial-C-Beliefs"]
   )
 end
@@ -1363,7 +1363,7 @@ INPUTBOX
 167
 620
 Run-Length
-2000.0
+20000.0
 1
 0
 Number
@@ -2575,9 +2575,9 @@ CHOOSER
 190
 167
 235
-Initial-C-Beliefs
-Initial-C-Beliefs
-"Random (x, y)" "Ring Around (0, 0)" "Ring Around Agent" "At Agent" "At Other Agents"
+Initial-C-Belief-Positions
+Initial-C-Belief-Positions
+"Random" "Ring Around (0, 0)" "Ring Around Agent" "At Agent" "At Other Agents"
 0
 
 SLIDER
@@ -2701,12 +2701,12 @@ Initially Hide Objects and Links?
 1
 
 CHOOSER
-210
+195
 255
-348
+352
 300
-Initial-Attributes
-Initial-Attributes
+Initial-Person-Attributes
+Initial-Person-Attributes
 "Random" "4 Clusters" "Square Grid" "Triangular Grid" "Random-Patch"
 1
 
@@ -3176,11 +3176,11 @@ NetLogo 6.2.2
     <enumeratedValueSet variable="Number-Of-People">
       <value value="200"/>
     </enumeratedValueSet>
-    <enumeratedValueSet variable="Initial-C-Beliefs">
-      <value value="&quot;Random (x, y)&quot;"/>
+    <enumeratedValueSet variable="Initial-C-Belief-Positions">
+      <value value="&quot;Random&quot;"/>
     </enumeratedValueSet>
-    <enumeratedValueSet variable="Initial-Attributes">
-      <value value="&quot;4 Clusters&quot;"/>
+    <enumeratedValueSet variable="Initial-Person-Attributes">
+      <value value="&quot;Random&quot;"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="Perc-Right-Hand-Side">
       <value value="50"/>
@@ -3299,11 +3299,11 @@ NetLogo 6.2.2
     <enumeratedValueSet variable="Number-Of-People">
       <value value="200"/>
     </enumeratedValueSet>
-    <enumeratedValueSet variable="Initial-C-Beliefs">
-      <value value="&quot;Random (x, y)&quot;"/>
+    <enumeratedValueSet variable="Initial-C-Belief-Positions">
+      <value value="&quot;Random&quot;"/>
     </enumeratedValueSet>
-    <enumeratedValueSet variable="Initial-Attributes">
-      <value value="&quot;4 Clusters&quot;"/>
+    <enumeratedValueSet variable="Initial-Person-Attributes">
+      <value value="&quot;Random&quot;"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="Perc-Right-Hand-Side">
       <value value="50"/>
@@ -3431,12 +3431,12 @@ NetLogo 6.2.2
     <enumeratedValueSet variable="Number-Of-People">
       <value value="200"/>
     </enumeratedValueSet>
-    <enumeratedValueSet variable="Initial-C-Beliefs">
-      <value value="&quot;Random (x, y)&quot;"/>
+    <enumeratedValueSet variable="Initial-C-Belief-Positions">
+      <value value="&quot;Random&quot;"/>
       <value value="&quot;At Other Agents&quot;"/>
     </enumeratedValueSet>
-    <enumeratedValueSet variable="Initial-Attributes">
-      <value value="&quot;4 Clusters&quot;"/>
+    <enumeratedValueSet variable="Initial-Person-Attributes">
+      <value value="&quot;Random&quot;"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="Perc-Right-Hand-Side">
       <value value="50"/>
@@ -3546,11 +3546,11 @@ NetLogo 6.2.2
     <enumeratedValueSet variable="Number-Of-People">
       <value value="200"/>
     </enumeratedValueSet>
-    <enumeratedValueSet variable="Initial-C-Beliefs">
-      <value value="&quot;Random (x, y)&quot;"/>
+    <enumeratedValueSet variable="Initial-C-Belief-Positions">
+      <value value="&quot;Random&quot;"/>
     </enumeratedValueSet>
-    <enumeratedValueSet variable="Initial-Attributes">
-      <value value="&quot;4 Clusters&quot;"/>
+    <enumeratedValueSet variable="Initial-Person-Attributes">
+      <value value="&quot;Random&quot;"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="Perc-Right-Hand-Side">
       <value value="50"/>
@@ -3672,11 +3672,11 @@ NetLogo 6.2.2
     <enumeratedValueSet variable="Number-Of-People">
       <value value="200"/>
     </enumeratedValueSet>
-    <enumeratedValueSet variable="Initial-C-Beliefs">
-      <value value="&quot;Random (x, y)&quot;"/>
+    <enumeratedValueSet variable="Initial-C-Belief-Positions">
+      <value value="&quot;Random&quot;"/>
     </enumeratedValueSet>
-    <enumeratedValueSet variable="Initial-Attributes">
-      <value value="&quot;4 Clusters&quot;"/>
+    <enumeratedValueSet variable="Initial-Person-Attributes">
+      <value value="&quot;Random&quot;"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="Perc-Right-Hand-Side">
       <value value="50"/>
@@ -3786,11 +3786,11 @@ NetLogo 6.2.2
     <enumeratedValueSet variable="Number-Of-People">
       <value value="200"/>
     </enumeratedValueSet>
-    <enumeratedValueSet variable="Initial-C-Beliefs">
-      <value value="&quot;Random (x, y)&quot;"/>
+    <enumeratedValueSet variable="Initial-C-Belief-Positions">
+      <value value="&quot;Random&quot;"/>
     </enumeratedValueSet>
-    <enumeratedValueSet variable="Initial-Attributes">
-      <value value="&quot;4 Clusters&quot;"/>
+    <enumeratedValueSet variable="Initial-Person-Attributes">
+      <value value="&quot;Random&quot;"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="Perc-Right-Hand-Side">
       <value value="50"/>
@@ -3911,11 +3911,11 @@ setup</setup>
       <value value="300"/>
       <value value="400"/>
     </enumeratedValueSet>
-    <enumeratedValueSet variable="Initial-C-Beliefs">
-      <value value="&quot;Random (x, y)&quot;"/>
+    <enumeratedValueSet variable="Initial-C-Belief-Positions">
+      <value value="&quot;Random&quot;"/>
     </enumeratedValueSet>
-    <enumeratedValueSet variable="Initial-Attributes">
-      <value value="&quot;4 Clusters&quot;"/>
+    <enumeratedValueSet variable="Initial-Person-Attributes">
+      <value value="&quot;Random&quot;"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="Perc-Right-Hand-Side">
       <value value="50"/>
