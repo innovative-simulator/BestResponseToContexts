@@ -46,6 +46,7 @@ people-own [
   pp-freqs
   pp-most-freq-interaction
   pp-mfi-component
+  pp-out-cl-neighbors ; Sorted list
 ]
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -240,6 +241,7 @@ to-report new-person
         set color [color] of end1
       ]
     ]
+    set pp-out-cl-neighbors sort out-c-link-neighbors
 
 ;    ; Ensure agent has model relevant to self?
 ;    ask min-one-of out-c-link-neighbors [who] [
@@ -333,7 +335,7 @@ end
 to homogenous-ringed-c-beliefs [given-radius]
   foreach sorted-people [ego ->
     ask ego [
-      layout-circle (sort out-c-link-neighbors) given-radius
+      layout-circle pp-out-cl-neighbors given-radius
     ]
   ]
 end
@@ -344,12 +346,12 @@ to heterogeneous-ringed-c-beliefs [given-radius]
   foreach sorted-people [ego ->
     ask ego [
       ifelse 1 = count out-c-link-neighbors [
-        foreach (sort out-c-link-neighbors) [cb ->
+        foreach pp-out-cl-neighbors [cb ->
           ask cb [move-to myself]
         ]
       ] [
         let a 360 / count out-c-link-neighbors
-        (foreach (sort out-c-link-neighbors) (n-values (count out-c-link-neighbors) [k -> k]) [[cb k] ->
+        (foreach pp-out-cl-neighbors (n-values (length pp-out-cl-neighbors) [k -> k]) [[cb k] ->
           ask cb [
             move-to myself
             set heading a * k
@@ -434,6 +436,11 @@ to highlight
       ask end2 [set hidden? false]
     ]
   ]
+  foreach sort patches [pa ->
+    ask pa [
+      set pcolor [color] of [min-one-of (out-c-link-neighbors with-min [distance pa]) [who]] of myself
+    ]
+  ]
 end
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -446,6 +453,9 @@ to unhighlight
       set hidden? true
       ask end2 [set hidden? true]
     ]
+  ]
+  foreach sort patches [pa ->
+    ask pa [set pcolor patch-color]
   ]
 end
 
@@ -725,11 +735,11 @@ end
 
 to recolor-patch-by-people
   if any? people-here [
-    set pcolor -3 + one-of modes [color] of people-here
+    set pcolor 3 + one-of modes [color] of people-here
     stop
   ]
   if any? neighbors with [any? people-here] [
-    set pcolor -3 + one-of modes reduce sentence map [pp -> [color] of pp] [people-here] of neighbors
+    set pcolor 3 + one-of modes reduce sentence map [pp -> [color] of pp] [people-here] of neighbors
     stop
   ]
 end
@@ -849,6 +859,24 @@ end
 
 to update-time-series-plots-additionals
   ; Less interesting(?) plots to be updated less frequently(?)
+
+  set-current-plot "Inter-C-Belief-Distance by MFI"
+  set-current-plot-pen "DD: Peace"
+  if 0 < perc-interaction-type 0 [
+    plotxy ticks mean-icb-distance-by-mfi 0
+  ]
+  set-current-plot-pen "DH: Dominated"
+  if 0 < perc-interaction-type 1 [
+    plotxy ticks mean-icb-distance-by-mfi 1
+  ]
+  set-current-plot-pen "HD: Dominant"
+  if 0 < perc-interaction-type 2 [
+    plotxy ticks mean-icb-distance-by-mfi 2
+  ]
+  set-current-plot-pen "HH: Conflict"
+  if 0 < perc-interaction-type 3 [
+    plotxy ticks mean-icb-distance-by-mfi 3
+  ]
 
   set-current-plot "Recent Payoff by MFI"
   set-current-plot-pen "DD: Peace"
@@ -1055,6 +1083,35 @@ to-report mean-payoff-by-mfi [given-mfi-type]
 end
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+to-report pp-inter-c-belief-distance
+  report mean map [cb-a -> [
+    mean map [cb-b -> [distance cb-b] of cb-a] [pp-out-cl-neighbors] of myself
+  ] of cb-a] pp-out-cl-neighbors
+end
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+to-report mean-icb-distance-by-mfi [given-mfi-type]
+  if empty? item given-mfi-type sorted-people-by-mfi-type [report 0]
+;  report mean map [pp -> [ifelse-value (pp-num-interactions = 0) [mean payoffs] [pp-total-payoff / pp-num-interactions]] of pp] item given-mfi-type sorted-people-by-mfi-type
+  report (
+    100 *
+    mean map [pp ->
+      [
+        ifelse-value (pp-num-interactions = 0) [0] [pp-inter-c-belief-distance]
+      ] of pp
+    ] item given-mfi-type sorted-people-by-mfi-type
+  ) / perc-world-max-distance
+end
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+to-report perc-world-max-distance
+  report 0.5 * sqrt ((world-width ^ 2) + (world-height ^ 2))
+end
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Link to other people within a given radius if they share your MFI
 ;; MFI Network has no impact on game and learning mechanisms
@@ -1063,7 +1120,7 @@ end
 to rescale-mfi-network-radius
   ; Run this if you change population size.
   ; Otherwise, network density will vary too much.
-  set MFI-Network-Radius 4 * sqrt (200 / number-of-people)
+  set MFI-Network-Radius 4 * sqrt (196 / number-of-people)
 end
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1285,7 +1342,7 @@ INPUTBOX
 167
 150
 Number-Of-People
-36.0
+196.0
 1
 0
 Number
@@ -1941,10 +1998,10 @@ Label Current-Person:
 1
 
 PLOT
-805
-205
-1115
-395
+2010
+400
+2320
+590
 Recent Payoff by MFI
 Ticks
 Payoff
@@ -2078,7 +2135,7 @@ MFI-Network-Radius
 MFI-Network-Radius
 0
 12
-9.428090415820634
+4.0
 .25
 1
 Patches
@@ -2429,7 +2486,7 @@ INPUTBOX
 997
 730
 Ticks-Between-Plot-Updates
-10.0
+100.0
 1
 0
 Number
@@ -2720,7 +2777,28 @@ CHOOSER
 Initial-Person-Attributes
 Initial-Person-Attributes
 "Random" "4 Clusters" "Square Grid" "Triangular Grid" "Random-Patch"
-3
+0
+
+PLOT
+805
+205
+1115
+395
+Inter-C-Belief-Distance by MFI
+Ticks
+% of World Max
+0.0
+1.0
+0.0
+50.0
+true
+true
+"" ""
+PENS
+"DD: Peace" 1.0 0 -13840069 true "" ""
+"DH: Dominated" 1.0 0 -4079321 true "" ""
+"HD: Dominant" 1.0 0 -13345367 true "" ""
+"HH: Conflict" 1.0 0 -2674135 true "" ""
 
 @#$#@#$#@
 # Play Best Response Given Context-Dependent Beliefs
@@ -3170,6 +3248,10 @@ NetLogo 6.2.2
     <metric>perc-self-hawkish-mfi-type 1</metric>
     <metric>perc-self-hawkish-mfi-type 2</metric>
     <metric>perc-self-hawkish-mfi-type 3</metric>
+    <metric>mean-icb-distance-by-mfi 0</metric>
+    <metric>mean-icb-distance-by-mfi 1</metric>
+    <metric>mean-icb-distance-by-mfi 2</metric>
+    <metric>mean-icb-distance-by-mfi 3</metric>
     <enumeratedValueSet variable="Base-MSNE">
       <value value="90"/>
     </enumeratedValueSet>
@@ -3286,6 +3368,10 @@ NetLogo 6.2.2
     <metric>perc-self-hawkish-mfi-type 1</metric>
     <metric>perc-self-hawkish-mfi-type 2</metric>
     <metric>perc-self-hawkish-mfi-type 3</metric>
+    <metric>mean-icb-distance-by-mfi 0</metric>
+    <metric>mean-icb-distance-by-mfi 1</metric>
+    <metric>mean-icb-distance-by-mfi 2</metric>
+    <metric>mean-icb-distance-by-mfi 3</metric>
     <enumeratedValueSet variable="Base-MSNE">
       <value value="90"/>
     </enumeratedValueSet>
@@ -3409,6 +3495,10 @@ NetLogo 6.2.2
     <metric>perc-self-hawkish-mfi-type 1</metric>
     <metric>perc-self-hawkish-mfi-type 2</metric>
     <metric>perc-self-hawkish-mfi-type 3</metric>
+    <metric>mean-icb-distance-by-mfi 0</metric>
+    <metric>mean-icb-distance-by-mfi 1</metric>
+    <metric>mean-icb-distance-by-mfi 2</metric>
+    <metric>mean-icb-distance-by-mfi 3</metric>
     <enumeratedValueSet variable="Base-MSNE">
       <value value="90"/>
     </enumeratedValueSet>
@@ -3542,6 +3632,10 @@ NetLogo 6.2.2
     <metric>perc-self-hawkish-mfi-type 1</metric>
     <metric>perc-self-hawkish-mfi-type 2</metric>
     <metric>perc-self-hawkish-mfi-type 3</metric>
+    <metric>mean-icb-distance-by-mfi 0</metric>
+    <metric>mean-icb-distance-by-mfi 1</metric>
+    <metric>mean-icb-distance-by-mfi 2</metric>
+    <metric>mean-icb-distance-by-mfi 3</metric>
     <steppedValueSet variable="Base-MSNE" first="0" step="5" last="100"/>
     <enumeratedValueSet variable="Number-Of-C-Beliefs">
       <value value="4"/>
@@ -3656,6 +3750,10 @@ NetLogo 6.2.2
     <metric>perc-self-hawkish-mfi-type 1</metric>
     <metric>perc-self-hawkish-mfi-type 2</metric>
     <metric>perc-self-hawkish-mfi-type 3</metric>
+    <metric>mean-icb-distance-by-mfi 0</metric>
+    <metric>mean-icb-distance-by-mfi 1</metric>
+    <metric>mean-icb-distance-by-mfi 2</metric>
+    <metric>mean-icb-distance-by-mfi 3</metric>
     <enumeratedValueSet variable="Base-MSNE">
       <value value="90"/>
     </enumeratedValueSet>
@@ -3782,6 +3880,10 @@ NetLogo 6.2.2
     <metric>perc-self-hawkish-mfi-type 1</metric>
     <metric>perc-self-hawkish-mfi-type 2</metric>
     <metric>perc-self-hawkish-mfi-type 3</metric>
+    <metric>mean-icb-distance-by-mfi 0</metric>
+    <metric>mean-icb-distance-by-mfi 1</metric>
+    <metric>mean-icb-distance-by-mfi 2</metric>
+    <metric>mean-icb-distance-by-mfi 3</metric>
     <enumeratedValueSet variable="Base-MSNE">
       <value value="90"/>
     </enumeratedValueSet>
@@ -3896,6 +3998,10 @@ NetLogo 6.2.2
     <metric>perc-self-hawkish-mfi-type 1</metric>
     <metric>perc-self-hawkish-mfi-type 2</metric>
     <metric>perc-self-hawkish-mfi-type 3</metric>
+    <metric>mean-icb-distance-by-mfi 0</metric>
+    <metric>mean-icb-distance-by-mfi 1</metric>
+    <metric>mean-icb-distance-by-mfi 2</metric>
+    <metric>mean-icb-distance-by-mfi 3</metric>
     <enumeratedValueSet variable="Base-MSNE">
       <value value="90"/>
     </enumeratedValueSet>
@@ -4020,6 +4126,10 @@ NetLogo 6.2.2
     <metric>perc-self-hawkish-mfi-type 1</metric>
     <metric>perc-self-hawkish-mfi-type 2</metric>
     <metric>perc-self-hawkish-mfi-type 3</metric>
+    <metric>mean-icb-distance-by-mfi 0</metric>
+    <metric>mean-icb-distance-by-mfi 1</metric>
+    <metric>mean-icb-distance-by-mfi 2</metric>
+    <metric>mean-icb-distance-by-mfi 3</metric>
     <enumeratedValueSet variable="Base-MSNE">
       <value value="90"/>
     </enumeratedValueSet>
@@ -4036,6 +4146,7 @@ NetLogo 6.2.2
       <value value="0"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="Number-Of-People">
+      <value value="16"/>
       <value value="36"/>
       <value value="64"/>
       <value value="100"/>
