@@ -19,6 +19,19 @@ setwd("C:\\MyDocus\\Simulation\\NetLogo\\Games\\HawkDove\\M-Nodes\\BestResponseT
 
 ##############################################################################
 # Import data
+##############################################################################
+
+file_processed <- function(
+	datafilename=""
+	) {
+	D <- read_netlogo_csv(datafilename)
+	D <- selected_fields(D)
+	D <- melt_by_mfi(D)
+	D <- aggregate_over_reps(D)
+	return(D)
+}
+
+##############################################################################
 
 read_netlogo_csv <- function(filename) {
 	# Reads in csv file output by NetLogo's BehaviorSpace
@@ -105,6 +118,8 @@ aggregate_over_reps <- function(D) {
 }
 
 ##############################################################################
+# Plot comparable data sets
+##############################################################################
 
 groups_info <- function() {
 	return(
@@ -112,7 +127,7 @@ groups_info <- function() {
 			id=1:4,
 			lab=c("DD", "DH", "HD", "HH"), 
 			lcol=c("green2", "yellow2", "blue2", "red2"),
-			pcol=c("green3", "yellow3", "blue3", "red3"),
+			pcol=c("green3", "yellow4", "blue4", "red3"),
 			shape=c(1, 2, 0, 4)
 		)
 	)
@@ -120,53 +135,90 @@ groups_info <- function() {
 
 ##############################################################################
 
-# Plot comparable data sets
-
-##############################################################################
-
-plot_perc_v_perc <- function(Z, ylim=c(0,100), ylab="% of Population", zlab="MFI Type", xlim=c(0,100), xlab="%", title="") {
-	G <- groups_info()
-
-	ggplot(Z, aes(x=x, y=y, z=z, shape=z, color=z)) +
+common_plot <- function(Z,
+	show_points = TRUE,
+	show_lines = TRUE,
+	show_errorbars = FALSE
+) {
+	P <- ggplot(Z, aes(x=x, y=y, z=z, shape=z, color=z)) +
 	theme_light(base_size = 12) +
 	theme(
 		plot.title = element_text(size=12), 
 		axis.title.x = element_text(size=12), 
 		axis.title.y = element_text(size=12),
-		legend.position = c(.95, .95),
-    		legend.justification = c("right", "top"),
-    		legend.box.just = "right",
+		#legend.position = "right",
+		#legend.position = c(.8, .95),
+   		#legend.justification = c("right", "top"),
+   		legend.box.just = "right",
 		legend.margin = margin(6, 6, 6, 6)
-	) +
-	labs(title=title, x=xlab, y=ylab, color=zlab, shape=zlab) +
-	#ylim(ylim) +
-	scale_x_continuous(limits=c(0, 100), breaks = seq(0, 100, by = 20)) +
-	scale_y_continuous(limits=c(0, 100), breaks = seq(0, 100, by = 20)) +
-	geom_point(size=3) +
-	scale_color_manual(values = G[,pcol], labels=G[,lab]) +
-	scale_shape_manual(values = G[,shape], labels=G[,lab]) +
-#	geom_errorbar(aes(ymin=y.lower, ymax=y.upper), width=2, position=position_dodge(0)) +
-	geom_errorbar(aes(ymin=y.lower, ymax=y.upper), width=2) +
-	geom_line(linewidth=1)
+	)
+
+	if (show_points == TRUE) {P <- P + geom_point(size=2, stroke=1)}
+
+	if (show_errorbars == TRUE) {P <- P + 
+#		geom_errorbar(aes(ymin=y.lower, ymax=y.upper), width=2, position=position_dodge(0)) +
+		geom_errorbar(aes(ymin=y.lower, ymax=y.upper), width=1)
+	}
+	
+	if (show_lines == TRUE) {P <- P + 
+		geom_line(linewidth=1)
+	}
+	
+	P
 }
 
 ##############################################################################
 
-plot_perc_v_x <- function(Z, ylim=c(0,100), ylab="% of Population", zlab="MFI Type", xlim=c(0,100), xlab="%", title="") {
-	G <- groups_info()
-	xbreaks <- 10**(1:5 * 0.5)
-	ggplot(Z, aes(x=x, y=y, z=z, shape=z, color=z)) +
-	theme_light(base_size = 12) +
-	theme(
-		plot.title = element_text(size=12), 
-		axis.title.x = element_text(size=12), 
-		axis.title.y = element_text(size=12),
-		legend.position = c(.95, .95),
-    		legend.justification = c("right", "top"),
-    		legend.box.just = "right",
-		legend.margin = margin(6, 6, 6, 6)
-	) +
+common_plot_additions <- function(P,
+	show_points = TRUE,
+	show_lines = TRUE,
+	show_errorbars = FALSE
+) {
+	
+	P
+}
+
+##############################################################################
+
+plot_generic <- function(Z, 
+	title="", 
+	zlab="MFI Type", 
+	ylim=c(0,100), ylab="% of Population", 
+	xlim=c(0,100), xlab="%",
+	show_points = TRUE,
+	show_lines = TRUE,
+	show_errorbars = FALSE
+) {
+	P <- common_plot(Z, show_points=show_points, show_lines=show_lines, show_errorbars=show_errorbars) +
 	labs(title=title, x=xlab, y=ylab, color=zlab, shape=zlab) +
+	scale_x_continuous(limits=xlim, breaks = seq(xlim[1], xlim[2], by = xlim[2]/5)) +
+	scale_y_continuous(limits=ylim, breaks = seq(ylim[1], ylim[2], by = ylim[2]/5))
+	
+	G <- groups_info()
+
+	P <- P +
+	scale_color_manual(values = G[,pcol], labels=G[,lab]) +
+	scale_shape_manual(values = G[,shape], labels=G[,lab])
+
+	P
+}
+
+##############################################################################
+
+plot_log_x <- function(Z, 
+	title="", 
+	zlab="MFI Type", 
+	ylim=c(0,100), ylab="% of Population", 
+	xlim=c(0,100), xlab="%",
+	show_points = TRUE,
+	show_lines = TRUE,
+	show_errorbars = FALSE
+) {
+	xbreaks <- 10**(1:5 * 0.5)
+	
+	P <- common_plot(Z, show_points=show_points, show_lines=show_lines, show_errorbars=show_errorbars) +
+	labs(title=title, x=xlab, y=ylab, color=zlab, shape=zlab) +
+	
 	#ylim(ylim) +
 	#scale_x_continuous(limits=c(0, 100), breaks = seq(0, 100, by = 20)) +
 	#scale_x_continuous(trans="log10") +
@@ -175,13 +227,14 @@ plot_perc_v_x <- function(Z, ylim=c(0,100), ylab="% of Population", zlab="MFI Ty
 		breaks = scales::trans_breaks("log2", function(x) 2^x)
 		#labels = scales::trans_format("log2", scales::math_format(2^.x))
 	) +
-	scale_y_continuous(limits=c(0, 100), breaks = seq(0, 100, by = 20)) +
-	geom_point(size=3) +
+	scale_y_continuous(limits=c(0, 100), breaks = seq(0, 100, by = 20))
+	
+	G <- groups_info()
+	P <- P +
 	scale_color_manual(values = G[,pcol], labels=G[,lab]) +
-	scale_shape_manual(values = G[,shape], labels=G[,lab]) +
-#	geom_errorbar(aes(ymin=y.lower, ymax=y.upper), width=2, position=position_dodge(0)) +
-	#geom_errorbar(aes(ymin=y.lower, ymax=y.upper), width=2) +
-	geom_line(linewidth=1)
+	scale_shape_manual(values = G[,shape], labels=G[,lab])
+
+	P
 }
 
 ##############################################################################
@@ -194,7 +247,7 @@ plot_perc_v_x <- function(Z, ylim=c(0,100), ylab="% of Population", zlab="MFI Ty
 survey_y_vs_x1_by_x2 <- function(D, y="Mean.Perc.of.Pop", y_label="", y_interval="SE.Perc.of.Pop", x1="Inertia", x1_label="", x2="MSNE", x2_label="") {
 	vals <- sort(unique(D[, get(x2)]))
 	for (v in vals) {
-		p <- plot_perc_v_x(D[
+		p <- plot_log_x(D[
 			get(x2) == v, 
 			.(
 				x=get(x1), 
@@ -214,7 +267,7 @@ survey_y_vs_x1_by_x2 <- function(D, y="Mean.Perc.of.Pop", y_label="", y_interval
 survey_y_vs_x1perc_by_x2 <- function(D, y="Mean.Perc.of.Pop", y_label="", y_interval="SE.Perc.of.Pop", x1="Inertia", x1_label="", x2="MSNE", x2_label="") {
 	vals <- sort(unique(D[, get(x2)]))
 	for (v in vals) {
-		p <- plot_perc_v_perc(D[
+		p <- plot_generic(D[
 			get(x2) == v, 
 			.(
 				x=get(x1), 
@@ -229,21 +282,137 @@ survey_y_vs_x1perc_by_x2 <- function(D, y="Mean.Perc.of.Pop", y_label="", y_inte
 	}
 }
 
+
 ##############################################################################
 
-file_processed <- function(
-	datafilename=""
-) {
-	D <- read_netlogo_csv(datafilename)
-	D <- selected_fields(D)
-	D <- melt_by_mfi(D)
-	D <- aggregate_over_reps(D)
-	return(D)
+plot_msne <- function(D) {
+	P <- plot_generic(
+		D[,
+			.(
+				x=MSNE, 
+				y=Mean.Perc.of.Pop,
+				z=MFI.Type,
+				y.lower=Mean.Perc.of.Pop - SE.Perc.of.Pop,
+				y.upper=Mean.Perc.of.Pop + SE.Perc.of.Pop
+			)
+		], 
+		title="", 
+		xlab="MSNE", 
+		xlim=c(0,100), 
+		zlab="MFI Type", 
+		ylim=c(0,100), ylab="% of Population", 
+		show_points = TRUE,
+		show_lines = TRUE,
+		show_errorbars = TRUE
+	)
+	P
 }
 
 ##############################################################################
 
+plot_cbeliefs <- function(D) {
+	P <- plot_log_x(
+		D[,
+			.(
+				x=Num.CBeliefs, 
+				y=Mean.Perc.of.Pop,
+				z=MFI.Type,
+				y.lower=Mean.Perc.of.Pop - SE.Perc.of.Pop,
+				y.upper=Mean.Perc.of.Pop + SE.Perc.of.Pop
+			)
+		], 
+		title="", 
+		xlab="Number of C-Beliefs", 
+		#xlim=c(0, max(D[, Num.CBeliefs])), 
+		zlab="MFI Type", 
+		ylim=c(0,100), ylab="% of Population", 
+		show_points = TRUE,
+		show_lines = TRUE,
+		show_errorbars = FALSE
+	)
+	P
+}
+
 ##############################################################################
+
+plot_people <- function(D) {
+	P <- plot_log_x(
+		D[,
+			.(
+				x=Num.People, 
+				y=Mean.Perc.of.Pop,
+				z=MFI.Type,
+				y.lower=Mean.Perc.of.Pop - SE.Perc.of.Pop,
+				y.upper=Mean.Perc.of.Pop + SE.Perc.of.Pop
+			)
+		], 
+		title="", 
+		xlab="Number of People", 
+		#xlim=c(0, max(D[, Num.CBeliefs])), 
+		zlab="MFI Type", 
+		ylim=c(0,100), ylab="% of Population", 
+		show_points = TRUE,
+		show_lines = TRUE,
+		show_errorbars = FALSE
+	)
+	P
+}
+
+##############################################################################
+
+plot_inertia <- function(D) {
+	P <- plot_generic(
+		D[,
+			.(
+				x=Inertia, 
+				y=Mean.Perc.of.Pop,
+				z=MFI.Type,
+				y.lower=Mean.Perc.of.Pop - SE.Perc.of.Pop,
+				y.upper=Mean.Perc.of.Pop + SE.Perc.of.Pop
+			)
+		], 
+		title="", 
+		xlab="Inertia", 
+		xlim=c(0,100), 
+		zlab="MFI Type", 
+		ylim=c(0,100), ylab="% of Population", 
+		show_points = TRUE,
+		show_lines = TRUE,
+		show_errorbars = FALSE
+	)
+	P
+}
+
+##############################################################################
+
+plot_memory <- function(D) {
+	P <- plot_generic(
+		D[,
+			.(
+				x=Memory, 
+				y=Mean.Perc.of.Pop,
+				z=MFI.Type,
+				y.lower=Mean.Perc.of.Pop - SE.Perc.of.Pop,
+				y.upper=Mean.Perc.of.Pop + SE.Perc.of.Pop
+			)
+		], 
+		title="", 
+		xlab="Memory", 
+		xlim=c(0,100), 
+		zlab="MFI Type", 
+		ylim=c(0,100), ylab="% of Population", 
+		show_points = TRUE,
+		show_lines = TRUE,
+		show_errorbars = FALSE
+	)
+	P
+}
+
+##############################################################################
+
+save_plot <- function(P, filename="test.png", dpi=150, units="px", width=750, height=500) {
+	ggsave(P, filename=filename, dpi=dpi, units=units, width=width, height=height)
+}
 
 ##############################################################################
 

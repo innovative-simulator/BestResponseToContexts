@@ -16,78 +16,20 @@ library("data.table")
 setwd("C:\\MyDocus\\Simulation\\NetLogo\\Games\\HawkDove\\M-Nodes\\BestResponseToContexts\\Analysis")
 
 ##############################################################################
-
-source("common_code.R")
-
-##############################################################################
-# Import data
-
-D <- read_netlogo_csv("BestResponseToContexts experiment_Inertia_v_MSNE-table.csv")
-
-dim(D)
-head(D)
-names(D)
-
-##############################################################################
-# Identify exact dataset and relabel fields
-
-D2 <- selected_fields(D)
-
-dim(D2)
-head(D2)
-
-##############################################################################
-# Transform down
-
-D3 <- melt_by_mfi(D2)
-
-dim(D3)
-head(D3)
-#unique(D3[,MFI.Type])
-D3[,.N, by=MFI.Type]
-
-##############################################################################
-
-
-
-##############################################################################
-# Aggregate to compute statistics
-
-D4 <- aggregate_over_reps(D3)
-
-dim(D4)
-head(D4)
-
-##############################################################################
-
-head(groups_info())
-
-##############################################################################
-# Plot comparable data sets
-
-p <- plot_perc_v_perc(D4[
-	MSNE == 90, 
-	.(
-		x=Inertia, 
-		y=Mean.Perc.of.Pop, 
-		z=MFI.Type,
-		y.lower=Mean.Perc.of.Pop - SE.Perc.of.Pop,
-		y.upper=Mean.Perc.of.Pop + SE.Perc.of.Pop
-	)
-], xlab="Inertia (%)", ylab="% of Population")
-p
-
-##############################################################################
-
-#ggsave(filename="test.jpg", dpi=300, units="in", width=4, height=4)
-
-##############################################################################
-# Load common functions from script
+# Load code in other script
 
 source("common_code.R")
 
 ##############################################################################
 # Load and process all the data files from NetLogo
+
+D_MSNE <- file_processed("BestResponseToContexts experiment_MSNE-table.csv")
+D_MSNE_Vars <- file_processed("BestResponseToContexts experiment_MSNE_Variations-table.csv")
+
+D_Mem <- file_processed("BestResponseToContexts experiment_Memory-table.csv")
+
+# Check for non-numeric values?
+D_Pop <- file_processed("BestResponseToContexts experiment_Pop-table.csv")
 
 D_Ine_Mem <- file_processed("BestResponseToContexts experiment_Inertia_v_Memory-table.csv")
 D_Ine_CBe <- file_processed("BestResponseToContexts experiment_Inertia_v_CBeliefs-table.csv")
@@ -101,12 +43,68 @@ D_CBeU_Ine <- file_processed("BestResponseToContexts experiment_CBeliefs_v_Inert
 
 D_CBeU_Pop <- file_processed("BestResponseToContexts experiment_CBeliefs_Pop-table.csv")
 
+##############################################################################
+
+source("common_code.R")
+
+P <- plot_msne(D_MSNE)
+P
+save_plot(P, filename="Fig_MSNE.png")
+
+unique(D_MSNE_Vars[,Memory])
+unique(D_MSNE_Vars[,Inertia])
+unique(D_MSNE_Vars[,Num.People])
+unique(D_MSNE_Vars[,Num.CBeliefs])
+plot_msne(D_MSNE_Vars[Inertia==90 & Memory==90 & Num.CBeliefs==4 & Num.People==200])
+plot_msne(D_MSNE_Vars[Inertia==50 & Memory==90 & Num.CBeliefs==4 & Num.People==200])
+plot_msne(D_MSNE_Vars[Inertia==90 & Memory==50 & Num.CBeliefs==4 & Num.People==200])
+plot_msne(D_MSNE_Vars[Inertia==90 & Memory==90 & Num.CBeliefs==2 & Num.People==200])
+plot_msne(D_MSNE_Vars[Inertia==90 & Memory==90 & Num.CBeliefs==8 & Num.People==200])
+plot_msne(D_MSNE_Vars[Inertia==90 & Memory==90 & Num.CBeliefs==16 & Num.People==200])
+plot_msne(D_MSNE_Vars[Inertia==90 & Memory==90 & Num.CBeliefs==4 & Num.People==50])
+# OMG!!
+plot_msne(D_MSNE_Vars[Inertia==50 & Memory==50 & Num.CBeliefs==2 & Num.People==200])
+plot_msne(D_MSNE_Vars[Inertia==50 & Memory==50 & Num.CBeliefs==4 & Num.People==200])
+plot_msne(D_MSNE_Vars[Inertia==50 & Memory==50 & Num.CBeliefs==8 & Num.People==200])
+plot_msne(D_MSNE_Vars[Inertia==50 & Memory==50 & Num.CBeliefs==16 & Num.People==200])
+
+P <- plot_msne(D_MSNE_Vars[Inertia==50 & Memory==50 & Num.CBeliefs==8 & Num.People==200])
+P
+save_plot(P, filename="Fig_I50_M50_CB8_P200.png")
+
+
+P <- plot_cbeliefs(D_CBeU_Ine[Inertia==90])
+P
+save_plot(P, filename="Fig_CBeliefs.png")
+
+P <- plot_people(D_CBeU_Pop[Num.CBeliefs==4 & Init.Positions=="Random" & Init.Attribs=="Random"])
+P
+P <- plot_people(D_Pop)
+P
+save_plot(P, filename="Fig_People.png")
+
+P <- plot_inertia(D_Ine_Mem[Memory==90])
+P
+save_plot(P, filename="Fig_Inertia.png")
+
+P <- plot_memory(D_CBe_Mem[Num.CBeliefs==4])
+P
+P <- plot_memory(D_Ine_Mem[Inertia==90])
+P
+P <- plot_memory(D_Mem)
+P
+save_plot(P, filename="Fig_Memory.png")
+
+
 
 ##############################################################################
 # Cycle through the unique values of one parameter, 
 # displaying response to other parameter.
+##############################################################################
 
 # Plot MFI Types as % of Population (Perc.of.Pop)
+
+source("common_code.R")
 
 survey_y_vs_x1perc_by_x2(D_Ine_Mem, 
 	y="Mean.Perc.of.Pop", 
