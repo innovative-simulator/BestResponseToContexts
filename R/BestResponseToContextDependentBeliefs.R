@@ -17,10 +17,10 @@ base_case_parameters <- function() {
 		memory = 0.9,
 		stats.recency = 0.9,
 		run.length = 2000,
-		min.pxcor = 0,
-		max.pxcor = 32,
-		min.pycor = 0,
-		max.pycor = 32#,
+		min.pxcor = -16,
+		max.pxcor = 16,
+		min.pycor = -16,
+		max.pycor = 16#,
 		#attribute.min = 0,
 		#attribute.max = 32
 	)
@@ -33,6 +33,12 @@ new_model <- function(P = base_case_parameters()) {
 	t <- 0
 	freq.mfi <- replicate(4, 0)
 	perc.mfi <- replicate(4, 0)
+	min.xcor <- P$min.pxcor - 0.5
+	max.xcor <- P$max.pxcor + 0.5
+	min.ycor <- P$min.pycor - 0.5
+	max.ycor <- P$max.pycor + 0.5
+	world.width <- 1 + P$max.pxcor - P$min.pxcor
+	world.height <- 1 + P$max.pycor - P$min.pycor
 	
 	list(
 		setup = function() {
@@ -78,7 +84,14 @@ new_model <- function(P = base_case_parameters()) {
 			plot_pop(Z=plot.data, Ticks=t, P=P)
 		},
 		population = function() {pop},
-		ticks = function() {t}
+		ticks = function() {t},
+		world_width = function() {world.width},
+		world.height = function() {world.height},
+		max_pxcor = function() {max.pxcor},
+		min_pxcor = function() {min.pxcor},
+		max_pycor = function() {max.pycor},
+		min_pycor = function() {min.pycor}
+		
 	)
 }
 
@@ -106,8 +119,8 @@ plot_pop <- function(Z, Ticks = NULL, P = base_case_parameters()) {
 	labs(title=paste("Ticks = ", Ticks), x="xcor", y="ycor", shape="MFI Type", color="MFI Type") +
 # #	xlim(c(P$min.pxcor, P$max.pxcor)) +
 # #	ylim(c(P$min.pycor, P$max.pycor)) +
-	scale_x_continuous(limits=c(P$min.pxcor, P$max.pxcor)) +
-	scale_y_continuous(limits=c(P$min.pycor, P$max.pycor)) +
+	scale_x_continuous(limits=c(P$min.pxcor - 0.5, P$max.pxcor + 0.5)) +
+	scale_y_continuous(limits=c(P$min.pycor - 0.5, P$max.pycor + 0.5)) +
 	geom_point(size=3, stroke=3, show.legend = TRUE) +
 	#scale_color_manual(values = G[,pcol], labels=G[,lab]) +
 	#scale_shape_manual(values = G[,shape], labels=G[,lab)
@@ -155,33 +168,33 @@ initial_people <- function(P = base_case_parameters()) {
 
 new_person <- function(ID = NULL, P = base_case_parameters()) {
 	id <- ID
-	x <- runif(1, min=P$min.pxcor, max=P$max.pxcor)
-	y <- runif(1, min=P$min.pycor, max=P$max.pycor)
+	x <- runif(1, min=P$min.pxcor - 0.5, max=P$max.pxcor + 0.5)
+	y <- runif(1, min=P$min.pycor - 0.5, max=P$max.pycor + 0.5)
 	my.cbs <- sapply(1:P$num.cbeliefs, function(i) new_cbelief(ID=i, P=P))
 	chosen.cbelief <- NULL
 	chosen.action <- NULL
 	freqs <- replicate(4, 0)
-	mfi.type <- NULL
+	mfi.type <- -1 + max_one_of(freqs) # Random ~ U[0, 3]
 	
 	list(
 		who = function() {id},
 		go_up = function(steps=1) {
-			y <<- y + steps
+			y <<- wrapped_cor(y + steps, minpcor=P$min.pycor, maxpcor=P$max.pycor)
 		},
 		go_down = function(steps=1) {
-			y <<- y - steps
+			y <<- wrapped_cor(y - steps, minpcor=P$min.pycor, maxpcor=P$max.pycor)
 		},
 		go_right = function(steps=1) {
-			x <<- x + steps
+			x <<- wrapped_cor(x + steps, minpcor=P$min.pxcor, maxpcor=P$max.pxcor)
 		},
 		go_left = function(steps=1) {
-			x <<- x - steps
+			x <<- wrapped_cor(x - steps, minpcor=P$min.pxcor, maxpcor=P$max.pxcor)
 		},
 		xcor = function() {x},
 		ycor = function() {y},
-		setxy = function(xcor=x, ycor=y) {
-			x <<- xcor
-			y <<- ycor
+		setxy = function(xcor = x, ycor = y) {
+			x <<- wrapped_cor(xcor, minpcor=P$min.pxcor, maxpcor=P$max.pxcor)
+			y <<- wrapped_cor(ycor, minpcor=P$min.pycor, maxpcor=P$max.pycor)
 		},
 		cbeliefs = function() {my.cbs},
 		cbelief = function(ID=NULL) {my.cbs[,ID]},
@@ -189,16 +202,10 @@ new_person <- function(ID = NULL, P = base_case_parameters()) {
 			my.cbs[,ID]$set_degree(p)
 		},
 		distance = function(agent) {
-			sqrt(
-				(x - agent$xcor()) ^ 2 +
-				(y - agent$ycor()) ^ 2
-			)
+			distancexy_wrap_h_v(x1=x, y1=y, x2=agent$xcor(), y2=agent$ycor(), w=1 + P$max.pxcor - P$min.pxcor, h=1 + P$max.pycor - P$min.pycor)
 		},
 		distancexy = function(xcor, ycor) {
-			sqrt(
-				(x - xcor) ^ 2 +
-				(y - ycor) ^ 2
-			)
+			distancexy_wrap_h_v(x1=x, y1=y, x2=xcor, y2=ycor, w=1 + P$max.pxcor - P$min.pxcor, h=1 + P$max.pycor - P$min.pycor)
 		},
 		chosen_cbelief = function() {chosen.cbelief},
 		choose_cbelief = function(opponent) {
@@ -246,46 +253,66 @@ new_person <- function(ID = NULL, P = base_case_parameters()) {
 
 new_cbelief <- function(ID = NULL, P = base_case_parameters()) {
 	id <- ID
-	x <- runif(1, min=P$min.pxcor, max=P$max.pxcor)
-	y <- runif(1, min=P$min.pycor, max=P$max.pycor)
+	x <- runif(1, min=P$min.pxcor - 0.5, max=P$max.pxcor + 0.5)
+	y <- runif(1, min=P$min.pycor - 0.5, max=P$max.pycor + 0.5)
 	d <- P$msne
 	list(
 		who = function() {id},
 		go_up = function(steps=1) {
-			y <<- y + steps
+			y <<- wrapped_cor(y + steps, minpcor=P$min.pycor, maxpcor=P$max.pycor)
 		},
 		go_down = function(steps=1) {
-			y <<- y - steps
+			y <<- wrapped_cor(y - steps, minpcor=P$min.pycor, maxpcor=P$max.pycor)
 		},
 		go_right = function(steps=1) {
-			x <<- x + steps
+			x <<- wrapped_cor(x + steps, minpcor=P$min.pxcor, maxpcor=P$max.pxcor)
 		},
 		go_left = function(steps=1) {
-			x <<- x - steps
+			x <<- wrapped_cor(x - steps, minpcor=P$min.pxcor, maxpcor=P$max.pxcor)
 		},
 		xcor = function() {x},
 		ycor = function() {y},
 		setxy = function(xcor = x, ycor = y) {
-			x <<- xcor
-			y <<- ycor
+			x <<- wrapped_cor(xcor, minpcor=P$min.pxcor, maxpcor=P$max.pxcor)
+			y <<- wrapped_cor(ycor, minpcor=P$min.pycor, maxpcor=P$max.pycor)
 		},
 		degree = function() {d},
 		set_degree = function(degree = d) {
 			d <<- degree
 		},
 		distance = function(agent) {
-			sqrt(
-				(x - agent$xcor()) ^ 2 +
-				(y - agent$ycor()) ^ 2
-			)
+			distancexy_wrap_h_v(x1=x, y1=y, x2=agent$xcor(), y2=agent$ycor(), w=1 + P$max.pxcor - P$min.pxcor, h=1 + P$max.pycor - P$min.pycor)
 		},
 		distancexy = function(xcor, ycor) {
-			sqrt(
-				(x - xcor) ^ 2 +
-				(y - ycor) ^ 2
-			)
+			distancexy_wrap_h_v(x1=x, y1=y, x2=xcor, y2=ycor, w=1 + P$max.pxcor - P$min.pxcor, h=1 + P$max.pycor - P$min.pycor)
 		}
 	)	
+}
+
+##############################################################################
+
+wrapped_cor <- function(xycor, minpcor, maxpcor) {
+	# World wraps. Calculate new coordinate.
+	if (xycor < minpcor - 0.5) {return(xycor + 1 + maxpcor - minpcor)}
+	if (xycor >= maxpcor + 0.5) {return(xycor - 1 - maxpcor + minpcor)}
+	xycor
+}
+
+##############################################################################
+
+distancexy_wrap_h_v <- function(x1, y1, x2, y2, w, h) {
+	# Compute distance between (x1, y1) and (x2, y2),
+	# assuming world wraps horizontally and vertically,
+	# where w=world.width and h=world.height.
+	dx <- ifelse(x1 > x2,
+		ifelse(2 * (x1 - x2) > w, x2 + w - x1, x1 - x2),
+		ifelse(2 * (x2 - x1) > w, x1 + w - x2, x2 - x1)
+	)
+	dy <- ifelse(y1 > y2,
+		ifelse(2 * (y1 - y2) > h, y2 + h - y1, y1 - y2),
+		ifelse(2 * (y2 - y1) > h, y1 + h - y2, y2 - y1)
+	)
+	sqrt((dx ^ 2) + (dy ^ 2))
 }
 
 ##############################################################################
@@ -403,7 +430,7 @@ results_row <- function(freqs, percs) {
 ##############################################################################
 ##############################################################################
 
-sim_run_results <- function(P = base_case_parameters(), return_model = FALSE, timeseries_update = FALSE, world_update = FALSE) {
+sim_run_results <- function(P = base_case_parameters(), return_results = TRUE, return_model = TRUE, timeseries_update = FALSE, world_update = FALSE) {
 	M <- new_model(P=P)
 	M$setup()
 	results <- cbind(Ticks=M$ticks() , results_row(percs=M$perc_mfi(), freqs=M$freq_mfi()))
@@ -436,8 +463,12 @@ sim_run_results <- function(P = base_case_parameters(), return_model = FALSE, ti
 	if (is.numeric(world_update)) {print(M$plot_pop())}
 
 	# Return model?
-	if (return_model) {return(M)}
-	return(results)	# Return results data instead
+	if (return_model == TRUE) {
+		if (return_results == TRUE) {return(list(model=M, results=results))} # Return both model and results in a list.
+		return(M) # Return model
+	}
+	if (return_results == TRUE) {return(results)}	# Return results data instead
+	return(0) # Return 0 to show that we did get this far.
 }
 
 ##############################################################################
@@ -501,7 +532,7 @@ experiment_inertia <- function(num.repetitions = 1, P = base_case_parameters()) 
 		for (v in c(0, 0.1, 0.3, 0.5, 0.7, 0.8, 0.85, 0.9, 0.95, 1)) {
 			cur.run <- cur.run + 1
 			P$inertia <- v
-			R <- sim_run_results(P=P, timeseries_update=100)
+			R <- sim_run_results(P=P, timeseries_update=100)$results # sim_run_results returns a list(model, results)
 			R <- R[Ticks==max(R[,Ticks])]
 			if (0==nrow(results)) {
 				results <- cbind(cur.run=cur.run, cur.rep=rep, inertia=v, R)

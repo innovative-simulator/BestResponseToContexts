@@ -4,7 +4,7 @@ library(data.table)
 setwd("C:\\MyDocus\\Simulation\\NetLogo\\Games\\HawkDove\\M-Nodes\\BestResponseToContexts\\R")
 
 source("BestResponseToContextDependentBeliefs.R")
-set.seed(2)
+set.seed(1)
 P <- base_case_parameters()
 P$run.length <- 1000
 P$num.people <- 100
@@ -13,12 +13,15 @@ P$num.people <- 100
 #P$memory <- 0.5
 #P$msne <- 0.1
 
-R <- sim_run_results(P=P, timeseries_update=100)
-
-M <- sim_run_results(P=P, return_model=TRUE, timeseries_update=100)
-M$plot_pop()
-R <- sim_run_results(P=P, world_update=100)
+MR <- sim_run_results(P=P, world_update=100)
+M <- MR$model
+R <- MR$results
 perc_timeseries(R)
+
+MR <- sim_run_results(P=P, timeseries_update=100)
+M <- MR$model
+R <- MR$results
+M$plot_pop()
 
 # Experiments
 A <- experiment_inertia(num.repetitions = 2)
@@ -34,3 +37,4 @@ y <- sapply(1:dim(pop)[2], function(i) pop[,i]$ycor() )
 z <- sapply(1:dim(pop)[2], function(i) {G[1 + pop[,i]$mfi_type(), lab] })
 H <- data.table(id=id, x=x, y=y, z=z, key="id")
 
+table(z)
