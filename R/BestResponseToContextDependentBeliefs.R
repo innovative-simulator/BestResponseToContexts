@@ -117,6 +117,7 @@ plot_pop <- function(Z, Ticks = NULL, P = base_case_parameters()) {
 
 	) +
 	labs(title=paste("Ticks = ", Ticks), x="xcor", y="ycor", shape="MFI Type", color="MFI Type") +
+	#labs(title=paste("Ticks = ", Ticks, "; MSNE = ", P$msne, "; Num.People = ", P$num.people, "; Num.CBs = ", P$num.cbeliefs, "; Memory = ", P$memory, "; Inertia = ", P$inertia), x="xcor", y="ycor", shape="MFI Type", color="MFI Type") +
 # #	xlim(c(P$min.pxcor, P$max.pxcor)) +
 # #	ylim(c(P$min.pycor, P$max.pycor)) +
 	scale_x_continuous(limits=c(P$min.pxcor - 0.5, P$max.pxcor + 0.5)) +
@@ -430,7 +431,7 @@ results_row <- function(freqs, percs) {
 ##############################################################################
 ##############################################################################
 
-sim_run_results <- function(P = base_case_parameters(), return_results = TRUE, return_model = TRUE, timeseries_update = FALSE, world_update = FALSE) {
+sim_run_results <- function(P = base_case_parameters(), return_results = TRUE, return_model = TRUE, timeseries_update = FALSE, world_update = FALSE, cur.run="", total.runs="") {
 	M <- new_model(P=P)
 	M$setup()
 	results <- cbind(Ticks=M$ticks() , results_row(percs=M$perc_mfi(), freqs=M$freq_mfi()))
@@ -447,7 +448,11 @@ sim_run_results <- function(P = base_case_parameters(), return_results = TRUE, r
 		
 		# Print timeseries?
 		if (is.numeric(timeseries_update)) {
-			if (0 == tim %% timeseries_update) {print(perc_timeseries(results))}
+			if (0 == tim %% timeseries_update) {
+				title <- paste("t=", tim, "; MSNE=", P$msne, "; Pop=", P$num.people, "; CBs=", P$num.cbeliefs, "; Mem=", P$memory, "; Ine=", P$inertia, "; Run=", cur.run, " of ", total.runs)
+				print(perc_timeseries(results, title=title))
+			}
+			
 		}
 		
 		# Print world?
@@ -457,7 +462,10 @@ sim_run_results <- function(P = base_case_parameters(), return_results = TRUE, r
 	}
 #	M
 	# Update timeseries?
-	if (is.numeric(timeseries_update)) {print(perc_timeseries(results))}
+	if (is.numeric(timeseries_update)) {
+		title <- paste("t=", tim, "; MSNE=", P$msne, "; Pop=", P$num.people, "; CBs=", P$num.cbeliefs, "; Mem=", P$memory, "; Ine=", P$inertia, "; Run=", cur.run, " of ", total.runs)
+		print(perc_timeseries(results, title=title))
+	}
 	
 	# Print world?
 	if (is.numeric(world_update)) {print(M$plot_pop())}
@@ -473,11 +481,12 @@ sim_run_results <- function(P = base_case_parameters(), return_results = TRUE, r
 
 ##############################################################################
 
-perc_timeseries <- function(R) {
+perc_timeseries <- function(R, title="") {
 	plot_perc_v_x(
 		melt_by_mfi(R)[, 
 			.(x=Ticks, y=as.numeric(Perc.of.Pop), z=MFI.Type)
-		]
+		],
+		title=title
 	)
 }
 
@@ -497,7 +506,7 @@ melt_by_mfi <- function(D) {
 			measure.vars = list(colsA, colsB), 
 			variable.name = "MFI.Type", 
 #			value.name = c("Perc.of.Pop")
-			value.name = c("Perc.of.Pop", "Frequency")
+			value.name = c("Perc.of.Pop", "Freq")
 #			value.name = c("Perc.of.Pop", "ICB.Distance")
 		)
 	
@@ -523,58 +532,39 @@ groups_info <- function() {
 ##############################################################################
 ##############################################################################
 
-experiment_inertia <- function(num.repetitions = 1, P = base_case_parameters()) {
-	P$run.length <- 500 # For quick tests
+##############################################################################
+
+experiment <- function(exp.factor = "msne", factor.values = c(0, 1), num.repetitions = 1, P = base_case_parameters()) {
+	P$run.length <- 5 # For quicker tests
 	
 	results <- data.table()
 	cur.run <- 0
-	for (rep in 1:num.repetitions) {
-		for (v in c(0, 0.1, 0.3, 0.5, 0.7, 0.8, 0.85, 0.9, 0.95, 1)) {
+	total.runs <- num.repetitions * length(factor.values)
+	
+	for (cur.rep in 1:num.repetitions) {
+		for (v in factor.values) {
 			cur.run <- cur.run + 1
-			P$inertia <- v
-			R <- sim_run_results(P=P, timeseries_update=100)$results # sim_run_results returns a list(model, results)
+			P[exp.factor] <- v
+			#print(paste("Run ", cur.run, " of ", total.runs, " : ", exp.factor, " = ", v))
+			R <- sim_run_results(P=P, return_model=TRUE, return_results=TRUE, timeseries_update=200, cur.run=cur.run, total.runs=total.runs)$results # sim_run_results returns a list(model, results)
 			R <- R[Ticks==max(R[,Ticks])]
 			if (0==nrow(results)) {
-				results <- cbind(cur.run=cur.run, cur.rep=rep, inertia=v, R)
+				results <- cbind(Cur.Run=cur.run, Cur.Rep=cur.rep, MSNE=P$msne, Inertia=P$inertia, Memory=P$memory, R)
 			} else {
-				results <- rbind(results, cbind(cur.run=cur.run, cur.rep=rep, inertia=v, R))
+				results <- rbind(results, cbind(Cur.Run=cur.run, Cur.Rep=cur.rep, MSNE=P$msne, Inertia=P$inertia, Memory=P$memory, R))
 			}
 			
 		}
 	}
+	#print("Experiment done!")
 	results
+	
 }
 
-##############################################################################
-##############################################################################
-##############################################################################
-##############################################################################
 
-plot_perc_v_perc <- function(Z, ylim=c(0,100), ylab="% of Population", zlab="MFI Type", xlim=c(0,100), xlab="%", title="") {
-	G <- groups_info()
-
-	ggplot(Z, aes(x=x, y=y, z=z, shape=z, color=z)) +
-	theme_light(base_size = 12) +
-	theme(
-		plot.title = element_text(size=12), 
-		axis.title.x = element_text(size=12), 
-		axis.title.y = element_text(size=12),
-		legend.position = c(.95, .95),
-    		legend.justification = c("right", "top"),
-    		legend.box.just = "right",
-		legend.margin = margin(6, 6, 6, 6)
-	) +
-	labs(title=title, x=xlab, y=ylab, color=zlab, shape=zlab) +
-	#ylim(ylim) +
-	scale_x_continuous(limits=c(0, 100), breaks = seq(0, 100, by = 20)) +
-	scale_y_continuous(limits=c(0, 100), breaks = seq(0, 100, by = 20)) +
-	geom_point(size=3) +
-	scale_color_manual(values = G[,pcol], labels=G[,lab]) +
-	scale_shape_manual(values = G[,shape], labels=G[,lab]) +
-#	geom_errorbar(aes(ymin=y.lower, ymax=y.upper), width=2, position=position_dodge(0)) +
-	geom_errorbar(aes(ymin=y.lower, ymax=y.upper), width=2) +
-	geom_line(linewidth=1)
-}
+##############################################################################
+##############################################################################
+##############################################################################
 
 ##############################################################################
 
@@ -604,7 +594,7 @@ plot_perc_v_x <- function(Z, ylim=c(0,100), ylab="% of Population", zlab="MFI Ty
 		# #labels = scales::trans_format("log2", scales::math_format(2^.x))
 	# ) +
 	scale_y_continuous(limits=c(0, 100), breaks = seq(0, 100, by = 20)) +
-	geom_point(size=3) +
+	#geom_point(size=3) +
 	scale_color_manual(values = G[,pcol], labels=G[,lab]) +
 	scale_shape_manual(values = G[,shape], labels=G[,lab]) +
 #	geom_errorbar(aes(ymin=y.lower, ymax=y.upper), width=2, position=position_dodge(0)) +
@@ -612,30 +602,332 @@ plot_perc_v_x <- function(Z, ylim=c(0,100), ylab="% of Population", zlab="MFI Ty
 	geom_line(linewidth=1)
 }
 
+
+##############################################################################
+##############################################################################
+##############################################################################
+##############################################################################
+##############################################################################
 ##############################################################################
 
-survey_y_vs_x1_by_x2 <- function(D, y="Mean.Perc.of.Pop", y_label="", y_interval="SE.Perc.of.Pop", x1="Inertia", x1_label="", x2="MSNE", x2_label="") {
-	vals <- sort(unique(D[, get(x2)]))
-	for (v in vals) {
-		p <- plot_perc_v_x(D[
-			get(x2) == v, 
-			.(
-				x=get(x1), 
-				y=get(y), 
-				z=MFI.Type,
-				y.lower=get(y) - get(y_interval),
-				y.upper=get(y) + get(y_interval)
-			)
-		], title=paste0(x2_label, " = ", v), xlab=x1_label, ylab=y_label)
-		print(p)
-		invisible(readline(prompt=paste0(x2_label, " = ", v, ". Press [enter] to continue")))
-	}
+aggregate_over_reps <- function(D) {
+	# Aggregate to compute statistics
+	return(
+		D[,.(
+			Mean.Perc.of.Pop = mean(Perc.of.Pop),
+			SD.Perc.of.Pop = sd(Perc.of.Pop),
+			SE.Perc.of.Pop = sd(Perc.of.Pop) / sqrt(.N),
+			Mean.Freq = mean(Freq),
+			SD.Freq = sd(Freq),
+			SE.Freq = sd(Freq) / sqrt(.N),
+			Num.Reps = .N
+		), by=.(
+			MSNE=100*MSNE, 
+			#Num.CBeliefs, 
+			#Num.People, 
+			Memory=100*Memory, 
+			Inertia=100*Inertia, 
+			#Init.Positions, 
+			#Init.Attribs, 
+			MFI.Type
+		)]
+	)
 }
 
 ##############################################################################
+# Plot comparable data sets
 ##############################################################################
+
+# groups_info <- function() {
+	# return(
+		# data.table(
+			# id=1:4,
+			# lab=c("DD", "DH", "HD", "HH"), 
+			# lcol=c("green2", "yellow2", "blue2", "red2"),
+			# pcol=c("green3", "yellow4", "blue4", "red3"),
+			# shape=c(1, 2, 0, 4)
+		# )
+	# )
+# }
+
 ##############################################################################
+
+common_plot <- function(Z,
+	show_points = TRUE,
+	show_lines = TRUE,
+	show_errorbars = FALSE
+) {
+	P <- ggplot(Z, aes(x=x, y=y, z=z, shape=z, color=z)) +
+	theme_light(base_size = 12) +
+	theme(
+		plot.title = element_text(size=12), 
+		axis.title.x = element_text(size=12), 
+		axis.title.y = element_text(size=12),
+		#legend.position = "right",
+		#legend.position = c(.8, .95),
+   		#legend.justification = c("right", "top"),
+   		legend.box.just = "right",
+		legend.margin = margin(6, 6, 6, 6)
+	)
+
+	if (show_points == TRUE) {P <- P + geom_point(size=2, stroke=1)}
+
+	if (show_errorbars == TRUE) {P <- P + 
+#		geom_errorbar(aes(ymin=y.lower, ymax=y.upper), width=2, position=position_dodge(0)) +
+		geom_errorbar(aes(ymin=y.lower, ymax=y.upper), width=1)
+	}
+	
+	if (show_lines == TRUE) {P <- P + 
+		geom_line(linewidth=1)
+	}
+	
+	P
+}
+
 ##############################################################################
+
+common_plot_additions <- function(P,
+	show_points = TRUE,
+	show_lines = TRUE,
+	show_errorbars = FALSE
+) {
+	
+	P
+}
+
+##############################################################################
+
+plot_generic <- function(Z, 
+	title="", 
+	zlab="MFI Type", 
+	ylim=c(0,100), ylab="% of Population", 
+	xlim=c(0,100), xlab="%",
+	show_points = TRUE,
+	show_lines = TRUE,
+	show_errorbars = FALSE
+) {
+	P <- common_plot(Z, show_points=show_points, show_lines=show_lines, show_errorbars=show_errorbars) +
+	labs(title=title, x=xlab, y=ylab, color=zlab, shape=zlab) +
+	scale_x_continuous(limits=xlim, breaks = seq(xlim[1], xlim[2], by = xlim[2]/5)) +
+	scale_y_continuous(limits=ylim, breaks = seq(ylim[1], ylim[2], by = ylim[2]/5))
+	
+	G <- groups_info()
+
+	P <- P +
+	scale_color_manual(values = G[,pcol], labels=G[,lab]) +
+	scale_shape_manual(values = G[,shape], labels=G[,lab])
+
+	P
+}
+
+##############################################################################
+
+plot_log_x <- function(Z, 
+	title="", 
+	zlab="MFI Type", 
+	ylim=c(0,100), ylab="% of Population", 
+	xlim=c(0,100), xlab="%",
+	show_points = TRUE,
+	show_lines = TRUE,
+	show_errorbars = FALSE
+) {
+	xbreaks <- 10**(1:5 * 0.5)
+	
+	P <- common_plot(Z, show_points=show_points, show_lines=show_lines, show_errorbars=show_errorbars) +
+	labs(title=title, x=xlab, y=ylab, color=zlab, shape=zlab) +
+	
+	#ylim(ylim) +
+	#scale_x_continuous(limits=c(0, 100), breaks = seq(0, 100, by = 20)) +
+	#scale_x_continuous(trans="log10") +
+	#scale_x_log10(
+	scale_x_continuous(trans="log2",
+		breaks = scales::trans_breaks("log2", function(x) 2^x)
+		#labels = scales::trans_format("log2", scales::math_format(2^.x))
+	) +
+	scale_y_continuous(limits=c(0, 100), breaks = seq(0, 100, by = 20))
+	
+	G <- groups_info()
+	P <- P +
+	scale_color_manual(values = G[,pcol], labels=G[,lab]) +
+	scale_shape_manual(values = G[,shape], labels=G[,lab])
+
+	P
+}
+
+##############################################################################
+
+plot_msne <- function(D) {
+	cur.pop <- unique(D[, Num.People])
+	cur.num.cbs <- unique(D[, Num.CBeliefs])
+	cur.ine <- unique(D[, Inertia])
+	cur.mem <- unique(D[, Memory])
+	
+	P <- plot_generic(
+		D[,
+			.(
+				x=MSNE, 
+				y=Mean.Perc.of.Pop,
+				z=MFI.Type,
+				y.lower=Mean.Perc.of.Pop - SE.Perc.of.Pop,
+				y.upper=Mean.Perc.of.Pop + SE.Perc.of.Pop
+			)
+		], 
+		title=paste0("CBs=", cur.num.cbs, "; Ine=", cur.ine, "; Mem= ", cur.mem, "; N=", cur.pop), 
+		xlab="MSNE (%)", 
+		xlim=c(0,100), 
+		zlab="MFI Type", 
+		ylim=c(0,100), ylab="% of Population", 
+		show_points = TRUE,
+		show_lines = TRUE,
+		show_errorbars = TRUE
+	)
+	P
+}
+
+##############################################################################
+
+plot_cbeliefs <- function(D) {
+	cur.pop <- unique(D[, Num.People])
+	cur.msne <- unique(D[, MSNE])
+	cur.ine <- unique(D[, Inertia])
+	cur.mem <- unique(D[, Memory])
+	cur.init.pos <- unique(D[, Init.Positions])
+	
+	P <- plot_log_x(
+		D[,
+			.(
+				x=Num.CBeliefs, 
+				y=Mean.Perc.of.Pop,
+				z=MFI.Type,
+				y.lower=Mean.Perc.of.Pop - SE.Perc.of.Pop,
+				y.upper=Mean.Perc.of.Pop + SE.Perc.of.Pop
+			)
+		], 
+		title=paste0("Pos=", cur.init.pos, "; MSNE=", cur.msne, "; Ine=", cur.ine, "; Mem=", cur.mem, "; N=", cur.pop), 
+		xlab="Number of C-Beliefs", 
+		#xlim=c(0, max(D[, Num.CBeliefs])), 
+		zlab="MFI Type", 
+		ylim=c(0,100), ylab="% of Population", 
+		show_points = TRUE,
+		show_lines = TRUE,
+		show_errorbars = FALSE
+	)
+	P
+}
+
+##############################################################################
+
+plot_people <- function(D) {
+	cur.num.cbs <- unique(D[, Num.CBeliefs])
+	cur.msne <- unique(D[, MSNE])
+	cur.ine <- unique(D[, Inertia])
+	cur.mem <- unique(D[, Memory])
+	
+	P <- plot_log_x(
+		D[,
+			.(
+				x=Num.People, 
+				y=Mean.Perc.of.Pop,
+				z=MFI.Type,
+				y.lower=Mean.Perc.of.Pop - SE.Perc.of.Pop,
+				y.upper=Mean.Perc.of.Pop + SE.Perc.of.Pop
+			)
+		], 
+		title=paste0("CBs=", cur.num.cbs, "; MSNE=", cur.msne, "; Ine=", cur.ine, "; Mem=", cur.mem, ""), 
+		xlab="Number of People", 
+		#xlim=c(0, max(D[, Num.CBeliefs])), 
+		zlab="MFI Type", 
+		ylim=c(0,100), ylab="% of Population", 
+		show_points = TRUE,
+		show_lines = TRUE,
+		show_errorbars = FALSE
+	)
+	P
+}
+
+##############################################################################
+
+plot_inertia <- function(D) {
+	#cur.pop <- unique(D[, Num.People])
+	#cur.num.cbs <- unique(D[, Num.CBeliefs])
+	cur.msne <- unique(D[, MSNE])
+	cur.mem <- unique(D[, Memory])
+
+	P <- plot_generic(
+		D[,
+			.(
+				x=Inertia, 
+				y=Mean.Perc.of.Pop,
+				z=MFI.Type,
+				y.lower=Mean.Perc.of.Pop - SE.Perc.of.Pop,
+				y.upper=Mean.Perc.of.Pop + SE.Perc.of.Pop
+			)
+		], 
+		title=paste0("MSNE=", cur.msne, "; Mem=", cur.mem), 
+		#title=paste0("CBs=", cur.num.cbs, "; MSNE=", cur.msne, "; Mem=", cur.mem, "; N=", cur.pop), 
+		xlab="Inertia (%)", 
+		xlim=c(0,100), 
+		zlab="MFI Type", 
+		ylim=c(0,100), ylab="% of Population", 
+		show_points = TRUE,
+		show_lines = TRUE,
+		show_errorbars = TRUE
+	)
+	P
+}
+
+##############################################################################
+
+plot_memory <- function(D) {
+	cur.pop <- unique(D[, Num.People])
+	cur.num.cbs <- unique(D[, Num.CBeliefs])
+	cur.msne <- unique(D[, MSNE])
+	cur.ine <- unique(D[, Inertia])
+
+	P <- plot_generic(
+		D[,
+			.(
+				x=Memory, 
+				y=Mean.Perc.of.Pop,
+				z=MFI.Type,
+				y.lower=Mean.Perc.of.Pop - SE.Perc.of.Pop,
+				y.upper=Mean.Perc.of.Pop + SE.Perc.of.Pop
+			)
+		], 
+		title=paste0("CBs=", cur.num.cbs, "; MSNE=", cur.msne, "; Ine=", cur.ine, "; N=", cur.pop), 
+		xlab="Memory (%)", 
+		xlim=c(0,100), 
+		zlab="MFI Type", 
+		ylim=c(0,100), ylab="% of Population", 
+		show_points = TRUE,
+		show_lines = TRUE,
+		show_errorbars = FALSE
+	)
+	P
+}
+
+##############################################################################
+
+save_plot <- function(P, filename="test.png", dpi=150, units="px", width=750, height=500) {
+	ggsave(P, filename=filename, dpi=dpi, units=units, width=width, height=height)
+}
+
+##############################################################################
+
+file_processed <- function(
+	datafilename=""
+	) {
+	D <- fread(datafilename)
+	#D <- selected_fields(D)
+	D <- melt_by_mfi(D)
+	D <- aggregate_over_reps(D)
+	return(D)
+}
+
+##############################################################################
+
+##############################################################################
+
 ##############################################################################
 ##############################################################################
 ##############################################################################
