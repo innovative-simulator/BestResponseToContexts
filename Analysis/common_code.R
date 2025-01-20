@@ -59,6 +59,7 @@ selected_fields <- function(D) {
 			Inertia = D$"Inertia", 
 			Init.Positions = D$"Initial-C-Belief-Positions", 
 			Init.Attribs = D$"Initial-Person-Attributes", 
+			Stats.Retention = D$"Statistics-Retention",
 			Perc.DD = D$"perc-interaction-type 0",
 			Perc.DH = D$"perc-interaction-type 1",
 			Perc.HD = D$"perc-interaction-type 2",
@@ -112,7 +113,8 @@ aggregate_over_reps <- function(D) {
 			Inertia, 
 			Init.Positions, 
 			Init.Attribs, 
-			MFI.Type
+			MFI.Type,
+			Stats.Retention
 		)]
 	)
 }
@@ -286,6 +288,11 @@ survey_y_vs_x1perc_by_x2 <- function(D, y="Mean.Perc.of.Pop", y_label="", y_inte
 ##############################################################################
 
 plot_msne <- function(D) {
+	cur.pop <- unique(D[, Num.People])
+	cur.num.cbs <- unique(D[, Num.CBeliefs])
+	cur.ine <- unique(D[, Inertia])
+	cur.mem <- unique(D[, Memory])
+	
 	P <- plot_generic(
 		D[,
 			.(
@@ -296,8 +303,8 @@ plot_msne <- function(D) {
 				y.upper=Mean.Perc.of.Pop + SE.Perc.of.Pop
 			)
 		], 
-		title="", 
-		xlab="MSNE", 
+		title=paste0("CBs=", cur.num.cbs, "; Ine=", cur.ine, "; Mem= ", cur.mem, "; N=", cur.pop), 
+		xlab="MSNE (%)", 
 		xlim=c(0,100), 
 		zlab="MFI Type", 
 		ylim=c(0,100), ylab="% of Population", 
@@ -310,7 +317,43 @@ plot_msne <- function(D) {
 
 ##############################################################################
 
+plot_icbd_msne <- function(D) {
+	cur.pop <- unique(D[, Num.People])
+	cur.num.cbs <- unique(D[, Num.CBeliefs])
+	cur.ine <- unique(D[, Inertia])
+	cur.mem <- unique(D[, Memory])
+
+	P <- plot_generic(
+		D[,
+			.(
+				x=MSNE, 
+				y=Mean.ICB.Distance,
+				z=MFI.Type,
+				y.lower=Mean.ICB.Distance - SE.ICB.Distance,
+				y.upper=Mean.ICB.Distance + SE.ICB.Distance
+			)
+		], 
+		title=paste0("CBs=", cur.num.cbs, "; Ine=", cur.ine, "; Mem= ", cur.mem, "; N=", cur.pop), 
+		xlab="MSNE (%)", 
+		xlim=c(0,100), 
+		zlab="MFI Type", 
+		ylim=c(0,100), ylab="% of World Max", 
+		show_points = TRUE,
+		show_lines = TRUE,
+		show_errorbars = TRUE
+	)
+	P
+}
+
+##############################################################################
+
 plot_cbeliefs <- function(D) {
+	cur.pop <- unique(D[, Num.People])
+	cur.msne <- unique(D[, MSNE])
+	cur.ine <- unique(D[, Inertia])
+	cur.mem <- unique(D[, Memory])
+	cur.init.pos <- unique(D[, Init.Positions])
+	
 	P <- plot_log_x(
 		D[,
 			.(
@@ -321,7 +364,7 @@ plot_cbeliefs <- function(D) {
 				y.upper=Mean.Perc.of.Pop + SE.Perc.of.Pop
 			)
 		], 
-		title="", 
+		title=paste0("Pos=", cur.init.pos, "; MSNE=", cur.msne, "; Ine=", cur.ine, "; Mem=", cur.mem, "; N=", cur.pop), 
 		xlab="Number of C-Beliefs", 
 		#xlim=c(0, max(D[, Num.CBeliefs])), 
 		zlab="MFI Type", 
@@ -335,7 +378,43 @@ plot_cbeliefs <- function(D) {
 
 ##############################################################################
 
+plot_cbeliefs_icbd <- function(D) {
+	cur.pop <- unique(D[, Num.People])
+	cur.msne <- unique(D[, MSNE])
+	cur.ine <- unique(D[, Inertia])
+	cur.mem <- unique(D[, Memory])
+	cur.init.pos <- unique(D[, Init.Positions])
+	
+	P <- plot_log_x(
+		D[,
+			.(
+				x=Num.CBeliefs, 
+				y=Mean.ICB.Distance,
+				z=MFI.Type,
+				y.lower=Mean.ICB.Distance - SE.ICB.Distance,
+				y.upper=Mean.ICB.Distance + SE.ICB.Distance
+			)
+		], 
+		title=paste0("Pos=", cur.init.pos, "; MSNE=", cur.msne, "; Ine=", cur.ine, "; Mem=", cur.mem, "; N=", cur.pop), 
+		xlab="Number of C-Beliefs", 
+		#xlim=c(0, max(D[, Num.CBeliefs])), 
+		zlab="MFI Type", 
+		ylim=c(0,100), ylab="% of World Max", 
+		show_points = TRUE,
+		show_lines = TRUE,
+		show_errorbars = FALSE
+	)
+	P
+}
+
+##############################################################################
+
 plot_people <- function(D) {
+	cur.num.cbs <- unique(D[, Num.CBeliefs])
+	cur.msne <- unique(D[, MSNE])
+	cur.ine <- unique(D[, Inertia])
+	cur.mem <- unique(D[, Memory])
+	
 	P <- plot_log_x(
 		D[,
 			.(
@@ -346,7 +425,7 @@ plot_people <- function(D) {
 				y.upper=Mean.Perc.of.Pop + SE.Perc.of.Pop
 			)
 		], 
-		title="", 
+		title=paste0("CBs=", cur.num.cbs, "; MSNE=", cur.msne, "; Ine=", cur.ine, "; Mem=", cur.mem, ""), 
 		xlab="Number of People", 
 		#xlim=c(0, max(D[, Num.CBeliefs])), 
 		zlab="MFI Type", 
@@ -361,6 +440,11 @@ plot_people <- function(D) {
 ##############################################################################
 
 plot_inertia <- function(D) {
+	cur.pop <- unique(D[, Num.People])
+	cur.num.cbs <- unique(D[, Num.CBeliefs])
+	cur.msne <- unique(D[, MSNE])
+	cur.mem <- unique(D[, Memory])
+
 	P <- plot_generic(
 		D[,
 			.(
@@ -371,8 +455,8 @@ plot_inertia <- function(D) {
 				y.upper=Mean.Perc.of.Pop + SE.Perc.of.Pop
 			)
 		], 
-		title="", 
-		xlab="Inertia", 
+		title=paste0("CBs=", cur.num.cbs, "; MSNE=", cur.msne, "; Mem=", cur.mem, "; N=", cur.pop), 
+		xlab="Inertia (%)", 
 		xlim=c(0,100), 
 		zlab="MFI Type", 
 		ylim=c(0,100), ylab="% of Population", 
@@ -385,7 +469,42 @@ plot_inertia <- function(D) {
 
 ##############################################################################
 
+plot_inertia_icbd <- function(D) {
+	cur.pop <- unique(D[, Num.People])
+	cur.num.cbs <- unique(D[, Num.CBeliefs])
+	cur.msne <- unique(D[, MSNE])
+	cur.mem <- unique(D[, Memory])
+
+	P <- plot_generic(
+		D[,
+			.(
+				x=Inertia, 
+				y=Mean.ICB.Distance,
+				z=MFI.Type,
+				y.lower=Mean.ICB.Distance - SE.ICB.Distance,
+				y.upper=Mean.ICB.Distance + SE.ICB.Distance
+			)
+		], 
+		title=paste0("CBs=", cur.num.cbs, "; MSNE=", cur.msne, "; Mem=", cur.mem, "; N=", cur.pop), 
+		xlab="Inertia (%)", 
+		xlim=c(0,100), 
+		zlab="MFI Type", 
+		ylim=c(0,100), ylab="% of World Max", 
+		show_points = TRUE,
+		show_lines = TRUE,
+		show_errorbars = FALSE
+	)
+	P
+}
+
+##############################################################################
+
 plot_memory <- function(D) {
+	cur.pop <- unique(D[, Num.People])
+	cur.num.cbs <- unique(D[, Num.CBeliefs])
+	cur.msne <- unique(D[, MSNE])
+	cur.ine <- unique(D[, Inertia])
+
 	P <- plot_generic(
 		D[,
 			.(
@@ -396,11 +515,41 @@ plot_memory <- function(D) {
 				y.upper=Mean.Perc.of.Pop + SE.Perc.of.Pop
 			)
 		], 
-		title="", 
-		xlab="Memory", 
+		title=paste0("CBs=", cur.num.cbs, "; MSNE=", cur.msne, "; Ine=", cur.ine, "; N=", cur.pop), 
+		xlab="Memory (%)", 
 		xlim=c(0,100), 
 		zlab="MFI Type", 
 		ylim=c(0,100), ylab="% of Population", 
+		show_points = TRUE,
+		show_lines = TRUE,
+		show_errorbars = FALSE
+	)
+	P
+}
+
+##############################################################################
+
+plot_memory_icbd <- function(D) {
+	cur.pop <- unique(D[, Num.People])
+	cur.num.cbs <- unique(D[, Num.CBeliefs])
+	cur.msne <- unique(D[, MSNE])
+	cur.ine <- unique(D[, Inertia])
+
+	P <- plot_generic(
+		D[,
+			.(
+				x=Memory, 
+				y=Mean.ICB.Distance,
+				z=MFI.Type,
+				y.lower=Mean.ICB.Distance - SE.ICB.Distance,
+				y.upper=Mean.ICB.Distance + SE.ICB.Distance
+			)
+		], 
+		title=paste0("CBs=", cur.num.cbs, "; MSNE=", cur.msne, "; Ine=", cur.ine, "; N=", cur.pop), 
+		xlab="Memory (%)", 
+		xlim=c(0,100), 
+		zlab="MFI Type", 
+		ylim=c(0,100), ylab="% of World Max", 
 		show_points = TRUE,
 		show_lines = TRUE,
 		show_errorbars = FALSE

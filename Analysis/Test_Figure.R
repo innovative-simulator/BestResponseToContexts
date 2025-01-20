@@ -23,6 +23,15 @@ source("common_code.R")
 ##############################################################################
 # Load and process all the data files from NetLogo
 
+D_Exp1 <- file_processed("BestResponseToContexts experiment_Exp1_MSNE-table.csv")
+D_Exp2 <- file_processed("BestResponseToContexts experiment_Exp2_StatRet-table.csv")
+D_Exp3 <- file_processed("BestResponseToContexts experiment_Exp3_CBeliefs-table.csv")
+D_Exp4 <- file_processed("BestResponseToContexts experiment_Exp4_Inertia-table.csv")
+D_Exp4 <- rbind(D_Exp4, D_Exp3[MSNE>=50]) # Add Inertia=100
+
+
+
+
 D_MSNE <- file_processed("BestResponseToContexts experiment_MSNE-table.csv")
 D_MSNE_Vars <- file_processed("BestResponseToContexts experiment_MSNE_Variations-table.csv")
 
@@ -47,9 +56,91 @@ D_CBeU_Pop <- file_processed("BestResponseToContexts experiment_CBeliefs_Pop-tab
 
 source("common_code.R")
 
+# 1. Varying MSNE with Stat.Retention = 100
+P <- plot_msne(D_Exp1)
+P
+
+# 2. Statistical Retention=90%
+P <- plot_msne(D_Exp2)
+P
+
+# 3. CBs > 1
+# CBs has no interaction with MSNE
+unique(D_Exp3[,Num.CBeliefs])
+plot_msne(D_Exp3[Num.CBeliefs==1])
+plot_msne(D_Exp3[Num.CBeliefs==2])
+plot_msne(D_Exp3[Num.CBeliefs==4])
+plot_msne(D_Exp3[Num.CBeliefs==16])
+plot_msne(D_Exp3[Num.CBeliefs==64])
+plot_msne(D_Exp3[Num.CBeliefs==200])
+
+unique(D_Exp3[,MSNE])
+plot_cbeliefs(D_Exp3[MSNE==100])
+plot_cbeliefs(D_Exp3[MSNE==90])
+plot_cbeliefs(D_Exp3[MSNE==70])
+plot_cbeliefs(D_Exp3[MSNE==50])
+plot_cbeliefs(D_Exp3[MSNE==30])
+plot_cbeliefs(D_Exp3[MSNE==10])
+plot_cbeliefs(D_Exp3[MSNE==0])
+
+# Num.CBeliefs affects inter-c-belief distance (obviously)
+plot_cbeliefs_icbd(D_Exp3[MSNE==100])
+plot_cbeliefs_icbd(D_Exp3[MSNE==90])
+plot_cbeliefs_icbd(D_Exp3[MSNE==70])
+plot_cbeliefs_icbd(D_Exp3[MSNE==50])
+plot_cbeliefs_icbd(D_Exp3[MSNE==30])
+plot_cbeliefs_icbd(D_Exp3[MSNE==10])
+plot_cbeliefs_icbd(D_Exp3[MSNE==0])
+
+# 4. Inertia < 100%
+unique(D_Exp4[,Num.CBeliefs])
+unique(D_Exp4[,MSNE])
+unique(D_Exp4[,Inertia])
+unique(D_Exp4[,Init.Positions])
+
+plot_cbeliefs_icbd(D_Exp4[MSNE==100 & Inertia==30])
+plot_cbeliefs_icbd(D_Exp4[MSNE==90 & Inertia==30])
+plot_cbeliefs_icbd(D_Exp4[MSNE==70 & Inertia==30])
+
+plot_cbeliefs(D_Exp4[MSNE==100 & Inertia==90])
+plot_cbeliefs(D_Exp4[MSNE==90 & Inertia==90])
+plot_cbeliefs(D_Exp4[MSNE==70 & Inertia==90])
+plot_cbeliefs(D_Exp4[MSNE==50 & Inertia==90])
+
+plot_inertia(D_Exp4[MSNE==50 & Num.CBeliefs==1])
+plot_inertia(D_Exp4[MSNE==50 & Num.CBeliefs==2])
+plot_inertia(D_Exp4[MSNE==50 & Num.CBeliefs==4])
+plot_inertia(D_Exp4[MSNE==50 & Num.CBeliefs==8])
+plot_inertia(D_Exp4[MSNE==50 & Num.CBeliefs==16])
+
+plot_inertia_icbd(D_Exp4[MSNE==90 & Num.CBeliefs==1])
+plot_inertia_icbd(D_Exp4[MSNE==90 & Num.CBeliefs==2])
+plot_inertia_icbd(D_Exp4[MSNE==90 & Num.CBeliefs==4])
+plot_inertia_icbd(D_Exp4[MSNE==90 & Num.CBeliefs==8])
+plot_inertia_icbd(D_Exp4[MSNE==90 & Num.CBeliefs==16])
+
+
+plot_msne(D_Exp4[Num.CBeliefs==1 & Inertia==30])
+plot_msne(D_Exp4[Num.CBeliefs==2 & Inertia==30])
+plot_msne(D_Exp4[Num.CBeliefs==4 & Inertia==30])
+plot_msne(D_Exp4[Num.CBeliefs==8 & Inertia==30])
+plot_msne(D_Exp4[Num.CBeliefs==16 & Inertia==30])
+plot_msne(D_Exp4[Num.CBeliefs==200 & Inertia==30])
+
+
+
+
+
+
+source("common_code.R")
+
+
+
 P <- plot_msne(D_MSNE)
 P
 save_plot(P, filename="Fig_MSNE.png")
+P <- plot_icbd_msne(D_MSNE)
+P
 
 unique(D_MSNE_Vars[,Memory])
 unique(D_MSNE_Vars[,Inertia])
@@ -68,6 +159,21 @@ plot_msne(D_MSNE_Vars[Inertia==50 & Memory==50 & Num.CBeliefs==4 & Num.People==2
 plot_msne(D_MSNE_Vars[Inertia==50 & Memory==50 & Num.CBeliefs==8 & Num.People==200])
 plot_msne(D_MSNE_Vars[Inertia==50 & Memory==50 & Num.CBeliefs==16 & Num.People==200])
 
+plot_icbd_msne(D_MSNE_Vars[Inertia==50 & Memory==50 & Num.CBeliefs==2 & Num.People==200])
+plot_icbd_msne(D_MSNE_Vars[Inertia==50 & Memory==50 & Num.CBeliefs==4 & Num.People==200])
+plot_icbd_msne(D_MSNE_Vars[Inertia==50 & Memory==50 & Num.CBeliefs==8 & Num.People==200])
+plot_icbd_msne(D_MSNE_Vars[Inertia==50 & Memory==50 & Num.CBeliefs==16 & Num.People==200])
+
+plot_msne(D_MSNE_Vars[Inertia==90 & Memory==50 & Num.CBeliefs==2 & Num.People==200])
+plot_msne(D_MSNE_Vars[Inertia==90 & Memory==50 & Num.CBeliefs==4 & Num.People==200])
+plot_msne(D_MSNE_Vars[Inertia==90 & Memory==50 & Num.CBeliefs==8 & Num.People==200])
+plot_msne(D_MSNE_Vars[Inertia==90 & Memory==50 & Num.CBeliefs==16 & Num.People==200])
+
+plot_msne(D_MSNE_Vars[Inertia==50 & Memory==90 & Num.CBeliefs==2 & Num.People==200])
+plot_msne(D_MSNE_Vars[Inertia==50 & Memory==90 & Num.CBeliefs==4 & Num.People==200])
+plot_msne(D_MSNE_Vars[Inertia==50 & Memory==90 & Num.CBeliefs==8 & Num.People==200])
+plot_msne(D_MSNE_Vars[Inertia==50 & Memory==90 & Num.CBeliefs==16 & Num.People==200])
+
 P <- plot_msne(D_MSNE_Vars[Inertia==50 & Memory==50 & Num.CBeliefs==8 & Num.People==200])
 P
 save_plot(P, filename="Fig_I50_M50_CB8_P200.png")
@@ -76,6 +182,11 @@ save_plot(P, filename="Fig_I50_M50_CB8_P200.png")
 P <- plot_cbeliefs(D_CBeU_Ine[Inertia==90])
 P
 save_plot(P, filename="Fig_CBeliefs.png")
+
+P <- plot_cbeliefs(D_CBe_Ine[Inertia==90])
+P
+save_plot(P, filename="Fig_CBeliefsMatched.png")
+
 
 P <- plot_people(D_CBeU_Pop[Num.CBeliefs==4 & Init.Positions=="Random" & Init.Attribs=="Random"])
 P
