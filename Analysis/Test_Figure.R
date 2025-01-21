@@ -28,7 +28,7 @@ D_Exp2 <- file_processed("BestResponseToContexts experiment_Exp2_StatRet-table.c
 D_Exp3 <- file_processed("BestResponseToContexts experiment_Exp3_CBeliefs-table.csv")
 D_Exp4 <- file_processed("BestResponseToContexts experiment_Exp4_Inertia-table.csv")
 D_Exp4 <- rbind(D_Exp4, D_Exp3[MSNE>=50]) # Add Inertia=100
-
+D_Exp5 <- file_processed("BestResponseToContexts experiment_Exp5_Memory-table.csv")
 
 
 
@@ -53,18 +53,28 @@ D_CBeU_Ine <- file_processed("BestResponseToContexts experiment_CBeliefs_v_Inert
 D_CBeU_Pop <- file_processed("BestResponseToContexts experiment_CBeliefs_Pop-table.csv")
 
 ##############################################################################
+##############################################################################
 
 source("common_code.R")
 
+##############################################################################
+
 # 1. Varying MSNE with Stat.Retention = 100
+
 P <- plot_msne(D_Exp1)
 P
 
+##############################################################################
+
 # 2. Statistical Retention=90%
+
 P <- plot_msne(D_Exp2)
 P
 
+##############################################################################
+
 # 3. CBs > 1
+
 # CBs has no interaction with MSNE
 unique(D_Exp3[,Num.CBeliefs])
 plot_msne(D_Exp3[Num.CBeliefs==1])
@@ -92,7 +102,10 @@ plot_cbeliefs_icbd(D_Exp3[MSNE==30])
 plot_cbeliefs_icbd(D_Exp3[MSNE==10])
 plot_cbeliefs_icbd(D_Exp3[MSNE==0])
 
+##############################################################################
+
 # 4. Inertia < 100%
+
 unique(D_Exp4[,Num.CBeliefs])
 unique(D_Exp4[,MSNE])
 unique(D_Exp4[,Inertia])
@@ -127,13 +140,90 @@ plot_msne(D_Exp4[Num.CBeliefs==8 & Inertia==30])
 plot_msne(D_Exp4[Num.CBeliefs==16 & Inertia==30])
 plot_msne(D_Exp4[Num.CBeliefs==200 & Inertia==30])
 
+##############################################################################
+
+# 5. Memory <= 100%
+
+unique(D_Exp5[,Memory])
+unique(D_Exp5[,Num.CBeliefs])
+unique(D_Exp5[,MSNE])
+unique(D_Exp5[,Inertia])
+unique(D_Exp5[,Init.Positions])
+
+plot_msne(D_Exp5[Num.CBeliefs==1 & Memory==30])
+plot_msne(D_Exp5[Num.CBeliefs==2 & Memory==30 ])
+plot_msne(D_Exp5[Num.CBeliefs==4 & Memory==30 ])
+plot_msne(D_Exp5[Num.CBeliefs==8 & Memory==30 ])
+plot_msne(D_Exp5[Num.CBeliefs==16 & Memory==30 ])
+
+plot_msne(D_Exp5[Num.CBeliefs==1 & Memory==50])
+plot_msne(D_Exp5[Num.CBeliefs==2 & Memory==50 ])
+plot_msne(D_Exp5[Num.CBeliefs==4 & Memory==50 ])
+plot_msne(D_Exp5[Num.CBeliefs==8 & Memory==50 ])
+plot_msne(D_Exp5[Num.CBeliefs==16 & Memory==50 ])
+
+plot_msne(D_Exp5[Num.CBeliefs==1 & Memory==70])
+plot_msne(D_Exp5[Num.CBeliefs==2 & Memory==70 ])
+plot_msne(D_Exp5[Num.CBeliefs==4 & Memory==70 ])
+plot_msne(D_Exp5[Num.CBeliefs==8 & Memory==70 ])
+plot_msne(D_Exp5[Num.CBeliefs==16 & Memory==70 ])
+
+plot_msne_icbd(D_Exp5[Num.CBeliefs==1 & Memory==50])
+plot_msne_icbd(D_Exp5[Num.CBeliefs==2 & Memory==50 ])
+plot_msne_icbd(D_Exp5[Num.CBeliefs==4 & Memory==50 ])
+plot_msne_icbd(D_Exp5[Num.CBeliefs==8 & Memory==50 ])
+plot_msne_icbd(D_Exp5[Num.CBeliefs==16 & Memory==50 ])
+
+plot_memory(D_Exp5[MSNE==50 & Num.CBeliefs==1])
+plot_memory(D_Exp5[MSNE==50 & Num.CBeliefs==2])
+plot_memory(D_Exp5[MSNE==50 & Num.CBeliefs==4])
+plot_memory(D_Exp5[MSNE==50 & Num.CBeliefs==8])
+plot_memory(D_Exp5[MSNE==50 & Num.CBeliefs==16])
+
+plot_memory(D_Exp5[MSNE==90 & Num.CBeliefs==1])
+plot_memory(D_Exp5[MSNE==90 & Num.CBeliefs==2])
+plot_memory(D_Exp5[MSNE==90 & Num.CBeliefs==4])
+plot_memory(D_Exp5[MSNE==90 & Num.CBeliefs==8])
+plot_memory(D_Exp5[MSNE==90 & Num.CBeliefs==16])
+
+plot_cbeliefs(D_Exp5[MSNE==50 & Memory==90])
+plot_cbeliefs(D_Exp5[MSNE==70 & Memory==90])
+plot_cbeliefs(D_Exp5[MSNE==90 & Memory==90])
+plot_cbeliefs(D_Exp5[MSNE==100 & Memory==90])
+
+plot_cbeliefs(D_Exp5[MSNE==50 & Memory==50])
+plot_cbeliefs(D_Exp5[MSNE==70 & Memory==50])
+plot_cbeliefs(D_Exp5[MSNE==90 & Memory==50])
+plot_cbeliefs(D_Exp5[MSNE==100 & Memory==50])
+
+plot_cbeliefs(D_Exp5[MSNE==50 & Memory==100])
+plot_cbeliefs(D_Exp5[MSNE==50 & Memory==90])
+plot_cbeliefs(D_Exp5[MSNE==50 & Memory==70])
+plot_cbeliefs(D_Exp5[MSNE==50 & Memory==50])
+plot_cbeliefs(D_Exp5[MSNE==50 & Memory==30])
+plot_cbeliefs(D_Exp5[MSNE==50 & Memory==10])
+plot_cbeliefs(D_Exp5[MSNE==50 & Memory==0])
+
+plot_cbeliefs(D_Exp5[MSNE==90 & Memory==100])
+plot_cbeliefs(D_Exp5[MSNE==90 & Memory==90])
+plot_cbeliefs(D_Exp5[MSNE==90 & Memory==70])
+plot_cbeliefs(D_Exp5[MSNE==90 & Memory==50])
+plot_cbeliefs(D_Exp5[MSNE==90 & Memory==30])
+plot_cbeliefs(D_Exp5[MSNE==90 & Memory==10])
+plot_cbeliefs(D_Exp5[MSNE==90 & Memory==0])
 
 
 
+
+
+
+##############################################################################
 
 
 source("common_code.R")
 
+##############################################################################
+##############################################################################
 
 
 P <- plot_msne(D_MSNE)

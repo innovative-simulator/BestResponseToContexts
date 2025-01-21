@@ -317,7 +317,7 @@ plot_msne <- function(D) {
 
 ##############################################################################
 
-plot_icbd_msne <- function(D) {
+plot_msne_icbd <- function(D) {
 	cur.pop <- unique(D[, Num.People])
 	cur.num.cbs <- unique(D[, Num.CBeliefs])
 	cur.ine <- unique(D[, Inertia])
