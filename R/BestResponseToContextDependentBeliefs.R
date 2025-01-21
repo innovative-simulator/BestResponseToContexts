@@ -549,9 +549,40 @@ experiment <- function(exp.factor = "msne", factor.values = c(0, 1), num.repetit
 			R <- sim_run_results(P=P, return_model=TRUE, return_results=TRUE, timeseries_update=200, cur.run=cur.run, total.runs=total.runs)$results # sim_run_results returns a list(model, results)
 			R <- R[Ticks==max(R[,Ticks])]
 			if (0==nrow(results)) {
-				results <- cbind(Cur.Run=cur.run, Cur.Rep=cur.rep, MSNE=P$msne, Inertia=P$inertia, Memory=P$memory, R)
+				results <- cbind(Cur.Run=cur.run, Cur.Rep=cur.rep, MSNE=P$msne, Inertia=P$inertia, Memory=P$memory, Num.CBeliefs=P$num.cbeliefs, Num.People=P$num.people, R)
 			} else {
-				results <- rbind(results, cbind(Cur.Run=cur.run, Cur.Rep=cur.rep, MSNE=P$msne, Inertia=P$inertia, Memory=P$memory, R))
+				results <- rbind(results, cbind(Cur.Run=cur.run, Cur.Rep=cur.rep, MSNE=P$msne, Inertia=P$inertia, Memory=P$memory, Num.CBeliefs=P$num.cbeliefs, Num.People=P$num.people, R))
+			}
+			
+		}
+	}
+	#print("Experiment done!")
+	results
+	
+}
+
+##############################################################################
+
+experiment_memory_50 <- function(exp.factor = "msne", factor.values = c(0, 1), num.repetitions = 1, P = base_case_parameters()) {
+	#P$run.length <- 5 # For quicker tests
+	P$memory <- 0.5
+	P$num.cbeliefs <- 8
+	
+	results <- data.table()
+	cur.run <- 0
+	total.runs <- num.repetitions * length(factor.values)
+	
+	for (cur.rep in 1:num.repetitions) {
+		for (v in factor.values) {
+			cur.run <- cur.run + 1
+			P[exp.factor] <- v
+			#print(paste("Run ", cur.run, " of ", total.runs, " : ", exp.factor, " = ", v))
+			R <- sim_run_results(P=P, return_model=TRUE, return_results=TRUE, timeseries_update=200, cur.run=cur.run, total.runs=total.runs)$results # sim_run_results returns a list(model, results)
+			R <- R[Ticks==max(R[,Ticks])]
+			if (0==nrow(results)) {
+				results <- cbind(Cur.Run=cur.run, Cur.Rep=cur.rep, MSNE=P$msne, Inertia=P$inertia, Memory=P$memory, Num.CBeliefs=P$num.cbeliefs, Num.People=P$num.people, R)
+			} else {
+				results <- rbind(results, cbind(Cur.Run=cur.run, Cur.Rep=cur.rep, MSNE=P$msne, Inertia=P$inertia, Memory=P$memory, Num.CBeliefs=P$num.cbeliefs, Num.People=P$num.people, R))
 			}
 			
 		}
@@ -623,8 +654,8 @@ aggregate_over_reps <- function(D) {
 			Num.Reps = .N
 		), by=.(
 			MSNE=100*MSNE, 
-			#Num.CBeliefs, 
-			#Num.People, 
+			Num.CBeliefs, 
+			Num.People, 
 			Memory=100*Memory, 
 			Inertia=100*Inertia, 
 			#Init.Positions, 
@@ -917,10 +948,16 @@ save_plot <- function(P, filename="test.png", dpi=150, units="px", width=750, he
 file_processed <- function(
 	datafilename=""
 	) {
+	print(paste0("Reading ", datafilename))
 	D <- fread(datafilename)
 	#D <- selected_fields(D)
+	print(paste0("File read. dim(D) is ", dim(D)))
+	print(paste0("Melt data by mfi"))
 	D <- melt_by_mfi(D)
+	print(paste0("Data melted. dim(D) is ", dim(D)))
+	print(paste0("Aggregate data over repetitions"))
 	D <- aggregate_over_reps(D)
+	print(paste0("Data aggregated. dim(D) is ", dim(D)))
 	return(D)
 }
 

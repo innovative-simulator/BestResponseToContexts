@@ -32,6 +32,10 @@ A <- experiment(exp.factor=c("memory"), factor.values = (0.05 * 0:20), num.repet
 A
 fwrite(A, "Test_Experiment_Memory.csv")
 
+A <- experiment_memory_50(exp.factor=c("msne"), factor.values = (0.05 * 0:20), num.repetitions = 5)
+A
+fwrite(A, "Test_Experiment_Memory_50_MSNE.csv")
+
 ##############################################################################
 ##############################################################################
 
@@ -84,4 +88,10 @@ source("BestResponseToContextDependentBeliefs.R")
 B <- file_processed("Test_Experiment_Inertia.csv")
 P <- plot_inertia(B)
 P
+
+source("BestResponseToContextDependentBeliefs.R")
+B <- file_processed("Test_Experiment_Memory_50_MSNE.csv")
+P <- plot_msne(B)
+P
+# Yes, the R version looks just as crazy as the NetLogo one!
 
