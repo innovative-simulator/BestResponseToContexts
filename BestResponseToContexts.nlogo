@@ -689,6 +689,7 @@ to-report recolor-person-method
     [-> person-recolor-by-action]
     [-> person-recolor-by-most-freq-interaction]
     [-> person-recolor-by-payoff]
+    [-> person-recolor-by-hawkishness]
     )
 end
 
@@ -699,6 +700,7 @@ to-report recolor-person-method-id
     "Action"
     "Most Frequent Interaction"
     "Payoff"
+    "Hawkishness"
   )
 end
 
@@ -719,6 +721,34 @@ end
 
 to person-recolor-by-payoff
   set color scale-color orange (pp-mean-payoff) min-payoff max-payoff
+end
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+to person-recolor-by-hawkishness
+  ;set color scale-color violet (mean map [alter -> best-response [cb-degree] of best-c-belief-against alter] sorted-people) 1.2 -0.2
+  set color item (
+    0.01 * (-1 + length hawkishness-colors) * pp-hawkishness
+  ) hawkishness-colors
+end
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+to-report pp-hawkishness
+  ; What proportion of population would I play "Hawk" against?
+  ; NB: Will use random numbers whenever C-Beliefs tie, or degree = MSNE.
+  ; NB: Slow to compute, so use it sparingly (e.g. at end of simulation run)
+  report 100 * mean map [alter -> best-response [cb-degree] of best-c-belief-against alter] sorted-people
+end
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+to-report hawkishness-colors
+  report (list (turquoise - 3) grey (orange ) (orange + 1))
+;  report (list (orange - 1) grey (turquoise + 1) (turquoise - 2))
+;  report (list (yellow - 1) green sky (blue - 1))
+;  report (list (lime) grey pink red)
+;  report (list sky lime pink red)
 end
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1338,8 +1368,11 @@ end
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 to setup-demo-seeds
-  set seed-setup 1735661492
-  set seed-go -1856694694
+  set seed-setup -1925572583
+  set seed-go 462326508
+
+  ;set seed-setup 1735661492
+  ;set seed-go -1856694694
 end
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1463,7 +1496,7 @@ Memory
 Memory
 0
 100
-100.0
+90.0
 5
 1
 %
@@ -1658,7 +1691,7 @@ INPUTBOX
 1562
 590
 MSNE-Color
-5.0
+4.0
 1
 0
 Color
@@ -1907,7 +1940,7 @@ Inertia
 Inertia
 0
 100
-100.0
+90.0
 5
 1
 %
@@ -1920,7 +1953,7 @@ CHOOSER
 540
 Color-People-By
 Color-People-By
-"Action" "Most Frequent Interaction" "Payoff"
+"Action" "Most Frequent Interaction" "Payoff" "Hawkishness"
 1
 
 BUTTON
@@ -2358,7 +2391,7 @@ INPUTBOX
 167
 980
 Seed-Setup
-1.735661492E9
+-1.925572583E9
 1
 0
 Number
@@ -2369,7 +2402,7 @@ INPUTBOX
 167
 1045
 Seed-Go
--1.856694694E9
+4.62326508E8
 1
 0
 Number
@@ -2707,7 +2740,7 @@ CHOOSER
 Initial-C-Belief-Positions
 Initial-C-Belief-Positions
 "Random" "Ring Around (0, 0)" "Ring Around Agent" "At Agent" "At Other Agents"
-4
+0
 
 SLIDER
 15
@@ -2885,8 +2918,8 @@ CHOOSER
 840
 Histogram-Values
 Histogram-Values
-"[ticks - cb-date-of-activation] of c-beliefs"
-0
+"[ticks - cb-date-of-activation] of c-beliefs" "[pp-hawkishness] of people"
+1
 
 BUTTON
 2010
@@ -6224,20 +6257,9 @@ NetLogo 6.2.2
     <enumeratedValueSet variable="Number-Of-C-Beliefs">
       <value value="1"/>
       <value value="2"/>
-      <value value="3"/>
       <value value="4"/>
-      <value value="5"/>
-      <value value="6"/>
       <value value="8"/>
-      <value value="10"/>
-      <value value="12"/>
       <value value="16"/>
-      <value value="32"/>
-      <value value="64"/>
-      <value value="120"/>
-      <value value="160"/>
-      <value value="190"/>
-      <value value="200"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="Memory">
       <value value="0"/>
@@ -6246,6 +6268,7 @@ NetLogo 6.2.2
       <value value="50"/>
       <value value="70"/>
       <value value="90"/>
+      <value value="100"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="Inertia">
       <value value="100"/>
