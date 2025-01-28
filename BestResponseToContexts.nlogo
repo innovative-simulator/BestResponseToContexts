@@ -433,7 +433,11 @@ to highlight
   foreach sort my-out-c-links [cl ->
     ask cl [
       set hidden? false
-      ask end2 [set hidden? false]
+      set thickness 0.5
+      ask end2 [
+        set hidden? false
+        set size 2 * size
+      ]
     ]
   ]
   foreach sort patches [pa ->
@@ -451,7 +455,11 @@ to unhighlight
   foreach sort my-out-c-links [cl ->
     ask cl [
       set hidden? true
-      ask end2 [set hidden? true]
+      set thickness 0
+      ask end2 [
+        set hidden? true
+        set size 0.5 * size
+      ]
     ]
   ]
   foreach sort patches [pa ->
@@ -504,7 +512,8 @@ to go
 
   tick
 
-  set num-by-i-type (map [[a b] ->
+;  set num-by-i-type map [a -> a] array:to-list cur-num-by-i-type ; This would have been fine.
+  set num-by-i-type (map [[a b] -> ; This was a mistake. Smoothing overkill. Makes no difference to stats from converged models though.
     0.01 * (
       statistics-retention * a +
       (100 - statistics-retention) * b
@@ -596,9 +605,20 @@ to update-c-belief-against [given-opponent]
 ;    setxy
 ;    (0.01 * ((xcor * inertia) + (([xcor] of given-opponent) * (100 - inertia))))
 ;    (0.01 * ((ycor * inertia) + (([ycor] of given-opponent) * (100 - inertia))))
+
+
+
   ]
 
 end
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;to-report shortest-jump [from-x to-x min-x max-x]
+;;		(to.x - from.x) *
+;;		ifelse(2 * abs(to.x - from.x) > w, -1, 1)
+;  report (to-x - from-x) * ifelse-value (2 * abs (to.x - from.x) > (max-x - min-x)) [-1] [1]
+;end
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -2391,7 +2411,7 @@ INPUTBOX
 167
 980
 Seed-Setup
--1.925572583E9
+-5.16803351E8
 1
 0
 Number
@@ -2402,7 +2422,7 @@ INPUTBOX
 167
 1045
 Seed-Go
-4.62326508E8
+-1.20561956E9
 1
 0
 Number
