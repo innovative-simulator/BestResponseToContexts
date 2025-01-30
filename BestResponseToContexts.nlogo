@@ -373,10 +373,16 @@ to-report new-c-belief
     set shape "circle"
     set size 0.5
     setxy random-xcor random-ycor
-    set cb-degree msne
+    set cb-degree cb-initial-degree
     set cb-date-of-activation -1
   ]
   report rep-obj
+end
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+to-report cb-initial-degree
+  report runresult initial-degree-of-belief
 end
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -563,12 +569,24 @@ end
 
 to choose-action-against [given-opponent]
   set pp-current-c-belief best-c-belief-against given-opponent
-  set pp-action best-response [cb-degree] of pp-current-c-belief
+  ;set pp-action best-response [cb-degree] of pp-current-c-belief
+  set pp-action chosen-action [cb-degree] of pp-current-c-belief
   if epsilon > 0 [ ; Chance of exploring alternative actions?
     if epsilon > random-float 100 [
       set pp-action 1 - pp-action
     ]
   ]
+end
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+to-report chosen-action [given-belief]
+  if Response-Choice = "Best" [report best-response given-belief]
+  if Response-Choice = "Stochastic" [report stochastic-response given-belief]
+  if Response-Choice = "MSNE" [report best-response base-msne]
+
+  report best-response given-belief
+
 end
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -614,14 +632,6 @@ end
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;to-report shortest-jump [from-x to-x min-x max-x]
-;;		(to.x - from.x) *
-;;		ifelse(2 * abs(to.x - from.x) > w, -1, 1)
-;  report (to-x - from-x) * ifelse-value (2 * abs (to.x - from.x) > (max-x - min-x)) [-1] [1]
-;end
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 to update-pp-stats [opp-action]
   set pp-num-interactions 1 + pp-num-interactions
   let cur-outcome (opp-action + 2 * pp-action)
@@ -640,6 +650,35 @@ to-report best-response [given-belief]
     (msne < given-belief) [report 0]
   )
   report ifelse-value (msne > random-float 100) [1] [0]
+end
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+to-report stochastic-response [given-belief]
+  report ifelse-value ((renorm-belief given-belief) > random-float 100) [0] [1]
+end
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+to-report logistic [x]
+  report 1.0 / (1 + exp (- x))
+end
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+to-report renorm-belief [given-belief]
+  report 100 * (last normalisation-constants) * (
+    (logistic (0.01 * Slope-Multiplier * (given-belief - msne)))
+    - first normalisation-constants
+  )
+end
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+to-report normalisation-constants
+  let a (logistic (0.01 * Slope-Multiplier * (0 - msne)))
+  let b (logistic (0.01 * Slope-Multiplier * (100 - msne)))
+  report list a (1.0 / (b - a))
 end
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1477,9 +1516,9 @@ HORIZONTAL
 
 SLIDER
 15
-445
+500
 187
-478
+533
 Base-MSNE
 Base-MSNE
 0
@@ -1509,9 +1548,9 @@ NIL
 
 SLIDER
 15
-240
+295
 187
-273
+328
 Memory
 Memory
 0
@@ -1541,9 +1580,9 @@ NIL
 
 INPUTBOX
 15
-560
+615
 167
-620
+675
 Run-Length
 2000.0
 1
@@ -1895,9 +1934,9 @@ NIL
 
 SLIDER
 15
-315
+370
 187
-348
+403
 Clustering-Weight
 Clustering-Weight
 0
@@ -1910,9 +1949,9 @@ HORIZONTAL
 
 INPUTBOX
 15
-480
+535
 90
-540
+595
 HD-Value
 10.0
 1
@@ -1921,9 +1960,9 @@ Number
 
 MONITOR
 95
-490
+545
 212
-535
+590
 HD Cost of Conflict
 hd-cost-of-conflict
 3
@@ -1953,9 +1992,9 @@ PENS
 
 SLIDER
 15
-275
+330
 187
-308
+363
 Inertia
 Inertia
 0
@@ -2135,9 +2174,9 @@ PENS
 
 MONITOR
 15
-775
+830
 167
-820
+875
 Expected Payoff at MSNE
 msne-exp-payoff
 3
@@ -2146,9 +2185,9 @@ msne-exp-payoff
 
 MONITOR
 15
-665
+720
 72
-710
+765
 D vs D
 item 0 payoffs
 3
@@ -2157,9 +2196,9 @@ item 0 payoffs
 
 MONITOR
 75
-665
+720
 132
-710
+765
 D vs H
 item 1 payoffs
 3
@@ -2168,9 +2207,9 @@ item 1 payoffs
 
 MONITOR
 15
-715
+770
 72
-760
+815
 H vs D
 item 2 payoffs
 3
@@ -2179,9 +2218,9 @@ item 2 payoffs
 
 MONITOR
 75
-715
+770
 132
-760
+815
 H vs H
 item 3 payoffs
 3
@@ -2190,9 +2229,9 @@ item 3 payoffs
 
 TEXTBOX
 15
-640
+695
 165
-658
+713
 Payoffs Table:
 14
 0.0
@@ -2200,9 +2239,9 @@ Payoffs Table:
 
 MONITOR
 15
-825
+880
 112
-870
+925
 Payoff to Noise
 noise-payoff
 3
@@ -2211,9 +2250,9 @@ noise-payoff
 
 SLIDER
 15
-350
+405
 197
-383
+438
 Perc-Right-Hand-Side
 Perc-Right-Hand-Side
 0
@@ -2407,9 +2446,9 @@ PENS
 
 INPUTBOX
 15
-920
+975
 167
-980
+1035
 Seed-Setup
 -5.16803351E8
 1
@@ -2418,9 +2457,9 @@ Number
 
 INPUTBOX
 15
-985
+1040
 167
-1045
+1100
 Seed-Go
 -1.20561956E9
 1
@@ -2429,9 +2468,9 @@ Number
 
 TEXTBOX
 15
-895
+950
 225
-915
+970
 Random Number Generation:
 14
 0.0
@@ -2456,9 +2495,9 @@ NIL
 
 BUTTON
 170
-940
+995
 232
-973
+1028
 Clear
 set seed-setup 0
 NIL
@@ -2473,9 +2512,9 @@ NIL
 
 BUTTON
 235
-940
+995
 337
-973
+1028
 Use Previous
 set seed-setup previous-seed-setup
 NIL
@@ -2490,9 +2529,9 @@ NIL
 
 BUTTON
 170
-1005
+1060
 232
-1038
+1093
 Clear
 set seed-go 0
 NIL
@@ -2507,9 +2546,9 @@ NIL
 
 BUTTON
 235
-1005
+1060
 337
-1038
+1093
 Use Previous
 set seed-go previous-seed-go
 NIL
@@ -2674,9 +2713,9 @@ Color
 
 BUTTON
 15
-1050
+1105
 147
-1083
+1138
 NIL
 setup-demo-seeds
 NIL
@@ -2754,9 +2793,9 @@ PENS
 
 CHOOSER
 15
-190
+245
 167
-235
+290
 Initial-C-Belief-Positions
 Initial-C-Belief-Positions
 "Random" "Ring Around (0, 0)" "Ring Around Agent" "At Agent" "At Other Agents"
@@ -2764,9 +2803,9 @@ Initial-C-Belief-Positions
 
 SLIDER
 15
-395
+450
 187
-428
+483
 Epsilon
 Epsilon
 0
@@ -2884,9 +2923,9 @@ Initially Hide Objects and Links?
 
 CHOOSER
 195
-255
+245
 352
-300
+290
 Initial-Person-Attributes
 Initial-Person-Attributes
 "Random" "4 Clusters" "Square Grid" "Triangular Grid" "Random-Patch"
@@ -2938,7 +2977,7 @@ CHOOSER
 840
 Histogram-Values
 Histogram-Values
-"[ticks - cb-date-of-activation] of c-beliefs" "[pp-hawkishness] of people"
+"[ticks - cb-date-of-activation] of c-beliefs" "[cb-degree] of c-beliefs" "[pp-hawkishness] of people"
 1
 
 BUTTON
@@ -3001,6 +3040,87 @@ NIL
 NIL
 NIL
 1
+
+CHOOSER
+15
+195
+167
+240
+Initial-Degree-Of-Belief
+Initial-Degree-Of-Belief
+"Base-MSNE" "Random-Float 100" "0" "50" "100" "100 - Base-MSNE"
+0
+
+PLOT
+850
+1120
+1050
+1270
+Stochastic Action
+Belief(Opp H)
+Pr(My H)
+0.0
+100.0
+0.0
+100.0
+true
+false
+"" ""
+PENS
+"default" 1.0 0 -16777216 true "" ""
+
+BUTTON
+1055
+1120
+1127
+1153
+Update
+set-current-plot \"Stochastic Action\"\nclear-plot\nforeach n-values 21 [n -> 5 * n] [d -> plotxy d (100 - renorm-belief d)]
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
+
+INPUTBOX
+1055
+1160
+1207
+1220
+Slope-Multiplier
+20.0
+1
+0
+Number
+
+SLIDER
+1055
+1225
+1227
+1258
+Base-MSNE
+Base-MSNE
+0
+100
+90.0
+5
+1
+%
+HORIZONTAL
+
+CHOOSER
+575
+1140
+737
+1185
+Response-Choice
+Response-Choice
+"Best" "Stochastic" "MSNE"
+0
 
 @#$#@#$#@
 # Play Best Response Given Context-Dependent Beliefs
@@ -3472,6 +3592,9 @@ NetLogo 6.2.2
     <enumeratedValueSet variable="Number-Of-People">
       <value value="200"/>
     </enumeratedValueSet>
+    <enumeratedValueSet variable="Initial-Degree-Of-Belief">
+      <value value="&quot;Base-MSNE&quot;"/>
+    </enumeratedValueSet>
     <enumeratedValueSet variable="Initial-C-Belief-Positions">
       <value value="&quot;Random&quot;"/>
     </enumeratedValueSet>
@@ -3598,6 +3721,9 @@ NetLogo 6.2.2
     </enumeratedValueSet>
     <enumeratedValueSet variable="Number-Of-People">
       <value value="200"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Initial-Degree-Of-Belief">
+      <value value="&quot;Base-MSNE&quot;"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="Initial-C-Belief-Positions">
       <value value="&quot;Random&quot;"/>
@@ -3739,6 +3865,9 @@ NetLogo 6.2.2
     <enumeratedValueSet variable="Number-Of-People">
       <value value="200"/>
     </enumeratedValueSet>
+    <enumeratedValueSet variable="Initial-Degree-Of-Belief">
+      <value value="&quot;Base-MSNE&quot;"/>
+    </enumeratedValueSet>
     <enumeratedValueSet variable="Initial-C-Belief-Positions">
       <value value="&quot;At Other Agents&quot;"/>
     </enumeratedValueSet>
@@ -3856,6 +3985,9 @@ NetLogo 6.2.2
     </enumeratedValueSet>
     <enumeratedValueSet variable="Number-Of-People">
       <value value="200"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Initial-Degree-Of-Belief">
+      <value value="&quot;Base-MSNE&quot;"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="Initial-C-Belief-Positions">
       <value value="&quot;Random&quot;"/>
@@ -3990,6 +4122,9 @@ NetLogo 6.2.2
     <enumeratedValueSet variable="Number-Of-People">
       <value value="200"/>
     </enumeratedValueSet>
+    <enumeratedValueSet variable="Initial-Degree-Of-Belief">
+      <value value="&quot;Base-MSNE&quot;"/>
+    </enumeratedValueSet>
     <enumeratedValueSet variable="Initial-C-Belief-Positions">
       <value value="&quot;Random&quot;"/>
     </enumeratedValueSet>
@@ -4107,6 +4242,9 @@ NetLogo 6.2.2
     </enumeratedValueSet>
     <enumeratedValueSet variable="Number-Of-People">
       <value value="200"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Initial-Degree-Of-Belief">
+      <value value="&quot;Base-MSNE&quot;"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="Initial-C-Belief-Positions">
       <value value="&quot;Random&quot;"/>
@@ -4236,6 +4374,9 @@ NetLogo 6.2.2
       <value value="324"/>
       <value value="400"/>
     </enumeratedValueSet>
+    <enumeratedValueSet variable="Initial-Degree-Of-Belief">
+      <value value="&quot;Base-MSNE&quot;"/>
+    </enumeratedValueSet>
     <enumeratedValueSet variable="Initial-C-Belief-Positions">
       <value value="&quot;Random&quot;"/>
     </enumeratedValueSet>
@@ -4362,6 +4503,9 @@ NetLogo 6.2.2
       <value value="196"/>
       <value value="256"/>
       <value value="400"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Initial-Degree-Of-Belief">
+      <value value="&quot;Base-MSNE&quot;"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="Initial-C-Belief-Positions">
       <value value="&quot;Random&quot;"/>
@@ -4513,6 +4657,9 @@ NetLogo 6.2.2
       <value value="324"/>
       <value value="400"/>
     </enumeratedValueSet>
+    <enumeratedValueSet variable="Initial-Degree-Of-Belief">
+      <value value="&quot;Base-MSNE&quot;"/>
+    </enumeratedValueSet>
     <enumeratedValueSet variable="Initial-C-Belief-Positions">
       <value value="&quot;Random&quot;"/>
       <value value="&quot;At Other Agents&quot;"/>
@@ -4652,6 +4799,9 @@ NetLogo 6.2.2
     <enumeratedValueSet variable="Number-Of-People">
       <value value="200"/>
     </enumeratedValueSet>
+    <enumeratedValueSet variable="Initial-Degree-Of-Belief">
+      <value value="&quot;Base-MSNE&quot;"/>
+    </enumeratedValueSet>
     <enumeratedValueSet variable="Initial-C-Belief-Positions">
       <value value="&quot;Random&quot;"/>
     </enumeratedValueSet>
@@ -4789,6 +4939,9 @@ NetLogo 6.2.2
     <enumeratedValueSet variable="Number-Of-People">
       <value value="200"/>
     </enumeratedValueSet>
+    <enumeratedValueSet variable="Initial-Degree-Of-Belief">
+      <value value="&quot;Base-MSNE&quot;"/>
+    </enumeratedValueSet>
     <enumeratedValueSet variable="Initial-C-Belief-Positions">
       <value value="&quot;Random&quot;"/>
     </enumeratedValueSet>
@@ -4925,6 +5078,9 @@ NetLogo 6.2.2
     </enumeratedValueSet>
     <enumeratedValueSet variable="Number-Of-People">
       <value value="200"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Initial-Degree-Of-Belief">
+      <value value="&quot;Base-MSNE&quot;"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="Initial-C-Belief-Positions">
       <value value="&quot;Random&quot;"/>
@@ -5070,6 +5226,9 @@ NetLogo 6.2.2
     <enumeratedValueSet variable="Number-Of-People">
       <value value="200"/>
     </enumeratedValueSet>
+    <enumeratedValueSet variable="Initial-Degree-Of-Belief">
+      <value value="&quot;Base-MSNE&quot;"/>
+    </enumeratedValueSet>
     <enumeratedValueSet variable="Initial-C-Belief-Positions">
       <value value="&quot;At Other Agents&quot;"/>
     </enumeratedValueSet>
@@ -5213,6 +5372,9 @@ NetLogo 6.2.2
     </enumeratedValueSet>
     <enumeratedValueSet variable="Number-Of-People">
       <value value="200"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Initial-Degree-Of-Belief">
+      <value value="&quot;Base-MSNE&quot;"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="Initial-C-Belief-Positions">
       <value value="&quot;At Other Agents&quot;"/>
@@ -5359,6 +5521,9 @@ NetLogo 6.2.2
     </enumeratedValueSet>
     <enumeratedValueSet variable="Number-Of-People">
       <value value="200"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Initial-Degree-Of-Belief">
+      <value value="&quot;Base-MSNE&quot;"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="Initial-C-Belief-Positions">
       <value value="&quot;At Other Agents&quot;"/>
@@ -5508,6 +5673,9 @@ NetLogo 6.2.2
     <enumeratedValueSet variable="Number-Of-People">
       <value value="200"/>
     </enumeratedValueSet>
+    <enumeratedValueSet variable="Initial-Degree-Of-Belief">
+      <value value="&quot;Base-MSNE&quot;"/>
+    </enumeratedValueSet>
     <enumeratedValueSet variable="Initial-C-Belief-Positions">
       <value value="&quot;Random&quot;"/>
     </enumeratedValueSet>
@@ -5637,6 +5805,9 @@ NetLogo 6.2.2
       <value value="50"/>
       <value value="200"/>
     </enumeratedValueSet>
+    <enumeratedValueSet variable="Initial-Degree-Of-Belief">
+      <value value="&quot;Base-MSNE&quot;"/>
+    </enumeratedValueSet>
     <enumeratedValueSet variable="Initial-C-Belief-Positions">
       <value value="&quot;Random&quot;"/>
     </enumeratedValueSet>
@@ -5755,6 +5926,9 @@ NetLogo 6.2.2
     <enumeratedValueSet variable="Number-Of-People">
       <value value="200"/>
     </enumeratedValueSet>
+    <enumeratedValueSet variable="Initial-Degree-Of-Belief">
+      <value value="&quot;Base-MSNE&quot;"/>
+    </enumeratedValueSet>
     <enumeratedValueSet variable="Initial-C-Belief-Positions">
       <value value="&quot;Random&quot;"/>
     </enumeratedValueSet>
@@ -5872,6 +6046,9 @@ NetLogo 6.2.2
     </enumeratedValueSet>
     <enumeratedValueSet variable="Number-Of-People">
       <value value="200"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Initial-Degree-Of-Belief">
+      <value value="&quot;Base-MSNE&quot;"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="Initial-C-Belief-Positions">
       <value value="&quot;Random&quot;"/>
@@ -6020,6 +6197,9 @@ NetLogo 6.2.2
     </enumeratedValueSet>
     <enumeratedValueSet variable="Number-Of-People">
       <value value="200"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Initial-Degree-Of-Belief">
+      <value value="&quot;Base-MSNE&quot;"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="Initial-C-Belief-Positions">
       <value value="&quot;Random&quot;"/>
@@ -6171,6 +6351,9 @@ NetLogo 6.2.2
     <enumeratedValueSet variable="Number-Of-People">
       <value value="200"/>
     </enumeratedValueSet>
+    <enumeratedValueSet variable="Initial-Degree-Of-Belief">
+      <value value="&quot;Base-MSNE&quot;"/>
+    </enumeratedValueSet>
     <enumeratedValueSet variable="Initial-C-Belief-Positions">
       <value value="&quot;Random&quot;"/>
     </enumeratedValueSet>
@@ -6298,6 +6481,9 @@ NetLogo 6.2.2
     </enumeratedValueSet>
     <enumeratedValueSet variable="Number-Of-People">
       <value value="200"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Initial-Degree-Of-Belief">
+      <value value="&quot;Base-MSNE&quot;"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="Initial-C-Belief-Positions">
       <value value="&quot;Random&quot;"/>
@@ -6444,6 +6630,9 @@ NetLogo 6.2.2
     <enumeratedValueSet variable="Number-Of-People">
       <value value="200"/>
     </enumeratedValueSet>
+    <enumeratedValueSet variable="Initial-Degree-Of-Belief">
+      <value value="&quot;Base-MSNE&quot;"/>
+    </enumeratedValueSet>
     <enumeratedValueSet variable="Initial-C-Belief-Positions">
       <value value="&quot;Random&quot;"/>
     </enumeratedValueSet>
@@ -6589,11 +6778,274 @@ NetLogo 6.2.2
     <enumeratedValueSet variable="Number-Of-People">
       <value value="200"/>
     </enumeratedValueSet>
+    <enumeratedValueSet variable="Initial-Degree-Of-Belief">
+      <value value="&quot;Base-MSNE&quot;"/>
+    </enumeratedValueSet>
     <enumeratedValueSet variable="Initial-C-Belief-Positions">
       <value value="&quot;At Other Agents&quot;"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="Initial-Person-Attributes">
       <value value="&quot;Random&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Perc-Right-Hand-Side">
+      <value value="50"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Clustering-Weight">
+      <value value="0"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Statistics-Retention">
+      <value value="90"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Run-Length">
+      <value value="2000"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="MSNE-Margin">
+      <value value="5"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="HD-Value">
+      <value value="10"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="MFI-Network-Radius">
+      <value value="4"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Ticks-Between-Network-Updates">
+      <value value="100"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Ticks-Between-Plot-Updates">
+      <value value="100"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Ticks-Until-Shock">
+      <value value="-1"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Shock-Repeats?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Shock-Code">
+      <value value="&quot;&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Seed-Setup">
+      <value value="0"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Seed-Go">
+      <value value="0"/>
+    </enumeratedValueSet>
+  </experiment>
+  <experiment name="experiment_Mem50_MSNE_InitDeg" repetitions="10" sequentialRunOrder="false" runMetricsEveryStep="false">
+    <setup>setup</setup>
+    <go>go</go>
+    <final>do-final-stats</final>
+    <metric>previous-seed-setup</metric>
+    <metric>previous-seed-go</metric>
+    <metric>timer</metric>
+    <metric>hd-cost-of-conflict</metric>
+    <metric>msne-exp-payoff</metric>
+    <metric>noise-payoff</metric>
+    <metric>item 0 payoffs</metric>
+    <metric>item 1 payoffs</metric>
+    <metric>item 2 payoffs</metric>
+    <metric>item 3 payoffs</metric>
+    <metric>count people</metric>
+    <metric>count C-Beliefs</metric>
+    <metric>perc-played-hawk</metric>
+    <metric>perc-played-dove</metric>
+    <metric>perc-interaction-type 0</metric>
+    <metric>perc-interaction-type 1</metric>
+    <metric>perc-interaction-type 2</metric>
+    <metric>perc-interaction-type 3</metric>
+    <metric>mean-payoff-by-mfi 0</metric>
+    <metric>mean-payoff-by-mfi 1</metric>
+    <metric>mean-payoff-by-mfi 2</metric>
+    <metric>mean-payoff-by-mfi 3</metric>
+    <metric>perc-events-dd</metric>
+    <metric>perc-events-hh</metric>
+    <metric>perc-events-dhhd</metric>
+    <metric>perc-always-hawk</metric>
+    <metric>perc-play-mixture</metric>
+    <metric>perc-always-dove</metric>
+    <metric>perc-best-response-dove</metric>
+    <metric>perc-best-response-msne</metric>
+    <metric>perc-best-response-hawk</metric>
+    <metric>perc-beliefs-between 0 20</metric>
+    <metric>perc-beliefs-between 20 40</metric>
+    <metric>perc-beliefs-between 40 60</metric>
+    <metric>perc-beliefs-between 60 80</metric>
+    <metric>perc-beliefs-between 80 101</metric>
+    <metric>num-mfi-components-larger-than 0</metric>
+    <metric>num-mfi-components-larger-than 1</metric>
+    <metric>num-mfi-components-larger-than 5</metric>
+    <metric>first first mfi-component-sizes</metric>
+    <metric>last first mfi-component-sizes</metric>
+    <metric>perc-self-hawkish-mfi-type 0</metric>
+    <metric>perc-self-hawkish-mfi-type 1</metric>
+    <metric>perc-self-hawkish-mfi-type 2</metric>
+    <metric>perc-self-hawkish-mfi-type 3</metric>
+    <metric>mean-icb-distance-by-mfi 0</metric>
+    <metric>mean-icb-distance-by-mfi 1</metric>
+    <metric>mean-icb-distance-by-mfi 2</metric>
+    <metric>mean-icb-distance-by-mfi 3</metric>
+    <steppedValueSet variable="Base-MSNE" first="0" step="5" last="100"/>
+    <enumeratedValueSet variable="Number-Of-C-Beliefs">
+      <value value="4"/>
+      <value value="8"/>
+      <value value="16"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Memory">
+      <value value="50"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Inertia">
+      <value value="100"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Epsilon">
+      <value value="0"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Number-Of-People">
+      <value value="200"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Initial-Degree-Of-Belief">
+      <value value="&quot;Base-MSNE&quot;"/>
+      <value value="&quot;0&quot;"/>
+      <value value="&quot;50&quot;"/>
+      <value value="&quot;100&quot;"/>
+      <value value="&quot;Random-Float 100&quot;"/>
+      <value value="&quot;100 - Base-MSNE&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Initial-C-Belief-Positions">
+      <value value="&quot;Random&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Initial-Person-Attributes">
+      <value value="&quot;Random&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Perc-Right-Hand-Side">
+      <value value="50"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Clustering-Weight">
+      <value value="0"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Statistics-Retention">
+      <value value="90"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Run-Length">
+      <value value="2000"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="MSNE-Margin">
+      <value value="5"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="HD-Value">
+      <value value="10"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="MFI-Network-Radius">
+      <value value="4"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Ticks-Between-Network-Updates">
+      <value value="100"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Ticks-Between-Plot-Updates">
+      <value value="100"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Ticks-Until-Shock">
+      <value value="-1"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Shock-Repeats?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Shock-Code">
+      <value value="&quot;&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Seed-Setup">
+      <value value="0"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Seed-Go">
+      <value value="0"/>
+    </enumeratedValueSet>
+  </experiment>
+  <experiment name="experiment_Mem50_MSNE_ResponseChoice" repetitions="10" sequentialRunOrder="false" runMetricsEveryStep="false">
+    <setup>setup</setup>
+    <go>go</go>
+    <final>do-final-stats</final>
+    <metric>previous-seed-setup</metric>
+    <metric>previous-seed-go</metric>
+    <metric>timer</metric>
+    <metric>hd-cost-of-conflict</metric>
+    <metric>msne-exp-payoff</metric>
+    <metric>noise-payoff</metric>
+    <metric>item 0 payoffs</metric>
+    <metric>item 1 payoffs</metric>
+    <metric>item 2 payoffs</metric>
+    <metric>item 3 payoffs</metric>
+    <metric>count people</metric>
+    <metric>count C-Beliefs</metric>
+    <metric>perc-played-hawk</metric>
+    <metric>perc-played-dove</metric>
+    <metric>perc-interaction-type 0</metric>
+    <metric>perc-interaction-type 1</metric>
+    <metric>perc-interaction-type 2</metric>
+    <metric>perc-interaction-type 3</metric>
+    <metric>mean-payoff-by-mfi 0</metric>
+    <metric>mean-payoff-by-mfi 1</metric>
+    <metric>mean-payoff-by-mfi 2</metric>
+    <metric>mean-payoff-by-mfi 3</metric>
+    <metric>perc-events-dd</metric>
+    <metric>perc-events-hh</metric>
+    <metric>perc-events-dhhd</metric>
+    <metric>perc-always-hawk</metric>
+    <metric>perc-play-mixture</metric>
+    <metric>perc-always-dove</metric>
+    <metric>perc-best-response-dove</metric>
+    <metric>perc-best-response-msne</metric>
+    <metric>perc-best-response-hawk</metric>
+    <metric>perc-beliefs-between 0 20</metric>
+    <metric>perc-beliefs-between 20 40</metric>
+    <metric>perc-beliefs-between 40 60</metric>
+    <metric>perc-beliefs-between 60 80</metric>
+    <metric>perc-beliefs-between 80 101</metric>
+    <metric>num-mfi-components-larger-than 0</metric>
+    <metric>num-mfi-components-larger-than 1</metric>
+    <metric>num-mfi-components-larger-than 5</metric>
+    <metric>first first mfi-component-sizes</metric>
+    <metric>last first mfi-component-sizes</metric>
+    <metric>perc-self-hawkish-mfi-type 0</metric>
+    <metric>perc-self-hawkish-mfi-type 1</metric>
+    <metric>perc-self-hawkish-mfi-type 2</metric>
+    <metric>perc-self-hawkish-mfi-type 3</metric>
+    <metric>mean-icb-distance-by-mfi 0</metric>
+    <metric>mean-icb-distance-by-mfi 1</metric>
+    <metric>mean-icb-distance-by-mfi 2</metric>
+    <metric>mean-icb-distance-by-mfi 3</metric>
+    <steppedValueSet variable="Base-MSNE" first="0" step="5" last="100"/>
+    <enumeratedValueSet variable="Number-Of-C-Beliefs">
+      <value value="4"/>
+      <value value="8"/>
+      <value value="16"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Memory">
+      <value value="50"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Inertia">
+      <value value="100"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Epsilon">
+      <value value="0"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Number-Of-People">
+      <value value="200"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Initial-Degree-Of-Belief">
+      <value value="&quot;Base-MSNE&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Initial-C-Belief-Positions">
+      <value value="&quot;Random&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Initial-Person-Attributes">
+      <value value="&quot;Random&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Response-Choice">
+      <value value="&quot;Stochastic&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Slope-Multiplier">
+      <value value="10"/>
+      <value value="20"/>
+      <value value="50"/>
+      <value value="100"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="Perc-Right-Hand-Side">
       <value value="50"/>
