@@ -386,6 +386,13 @@ to-report cb-initial-degree
 end
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+to-report Bernoulli [given-perc]
+  ; Bernoulli random
+  report ifelse-value (given-perc > random-float 100) [100] [0]
+end
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 to highlight-current-person
@@ -1494,7 +1501,7 @@ INPUTBOX
 167
 150
 Number-Of-People
-200.0
+196.0
 1
 0
 Number
@@ -1579,12 +1586,12 @@ NIL
 0
 
 INPUTBOX
-15
-615
-167
-675
+205
+620
+357
+680
 Run-Length
-2000.0
+4000.0
 1
 0
 Number
@@ -2287,7 +2294,7 @@ MFI-Network-Radius
 MFI-Network-Radius
 0
 12
-3.9597979746446663
+4.0
 .25
 1
 Patches
@@ -3044,11 +3051,11 @@ NIL
 CHOOSER
 15
 195
-167
+217
 240
 Initial-Degree-Of-Belief
 Initial-Degree-Of-Belief
-"Base-MSNE" "Random-Float 100" "0" "50" "100" "100 - Base-MSNE"
+"Base-MSNE" "Random-Float 100" "0" "50" "100" "100 - Base-MSNE" "Bernoulli 50" "Bernoulli Base-MSNE" "Bernoulli (100 - Base-MSNE)"
 0
 
 PLOT
@@ -3113,10 +3120,10 @@ Base-MSNE
 HORIZONTAL
 
 CHOOSER
-575
-1140
-737
-1185
+15
+610
+177
+655
 Response-Choice
 Response-Choice
 "Best" "Stochastic" "MSNE"
