@@ -57,8 +57,11 @@ selected_fields <- function(D) {
 			Num.People = D$"Number-Of-People", 
 			Memory = D$"Memory", 
 			Inertia = D$"Inertia", 
+			Init.Degree = "Base-MSNE", # D$"Initial-Degree-Of-Belief", 
 			Init.Positions = D$"Initial-C-Belief-Positions", 
 			Init.Attribs = D$"Initial-Person-Attributes", 
+			Response.Choice = "Best", # D$"Response-Choice", 
+			Slope.Multiplier = 20, # D$"Slope-Multiplier", # Unused unless Response.Choice = "Stochastic" 
 			Stats.Retention = D$"Statistics-Retention",
 			Perc.DD = D$"perc-interaction-type 0",
 			Perc.DH = D$"perc-interaction-type 1",
@@ -111,8 +114,11 @@ aggregate_over_reps <- function(D) {
 			Num.People, 
 			Memory, 
 			Inertia, 
+			Init.Degree,
 			Init.Positions, 
 			Init.Attribs, 
+			Response.Choice,
+			Slope.Multiplier,
 			MFI.Type,
 			Stats.Retention
 		)]
@@ -143,11 +149,13 @@ common_plot <- function(Z,
 	show_errorbars = FALSE
 ) {
 	P <- ggplot(Z, aes(x=x, y=y, z=z, shape=z, color=z)) +
-	theme_light(base_size = 12) +
+	theme_bw(base_size = 11) +
 	theme(
-		plot.title = element_text(size=12), 
-		axis.title.x = element_text(size=12), 
-		axis.title.y = element_text(size=12),
+		plot.title = element_text(size=11), 
+		axis.title.x = element_text(size=11), 
+		axis.title.y = element_text(size=11),
+		panel.grid.major = element_line(color="gray"),
+		panel.grid.minor = element_line(color="gray"),
 		#legend.position = "right",
 		#legend.position = c(.8, .95),
    		#legend.justification = c("right", "top"),
@@ -164,6 +172,43 @@ common_plot <- function(Z,
 	
 	if (show_lines == TRUE) {P <- P + 
 		geom_line(linewidth=1)
+	}
+	
+	P
+}
+
+##############################################################################
+
+small_plot <- function(Z,
+	show_points = TRUE,
+	show_lines = TRUE,
+	show_errorbars = FALSE
+) {
+	# Smaller font sizes, smaller points, and thinner lines than common_plot
+	P <- ggplot(Z, aes(x=x, y=y, z=z, shape=z, color=z)) +
+	theme_bw(base_size = 10) +
+	theme(
+		plot.title = element_text(size=10), 
+		axis.title.x = element_text(size=10), 
+		axis.title.y = element_text(size=10),
+		panel.grid.major = element_line(color="gray"),
+		#panel.grid.minor = element_line(color="gray"),
+		#legend.position = "right",
+		#legend.position = c(.8, .95),
+   		#legend.justification = c("right", "top"),
+   		legend.box.just = "right",
+		legend.margin = margin(6, 6, 6, 6)
+	)
+
+	if (show_points == TRUE) {P <- P + geom_point(size=1, stroke=0.5)}
+
+	if (show_errorbars == TRUE) {P <- P + 
+#		geom_errorbar(aes(ymin=y.lower, ymax=y.upper), width=2, position=position_dodge(0)) +
+		geom_errorbar(aes(ymin=y.lower, ymax=y.upper), width=0.5)
+	}
+	
+	if (show_lines == TRUE) {P <- P + 
+		geom_line(linewidth=0.5)
 	}
 	
 	P
@@ -236,6 +281,124 @@ plot_log_x <- function(Z,
 	scale_color_manual(values = G[,pcol], labels=G[,lab]) +
 	scale_shape_manual(values = G[,shape], labels=G[,lab])
 
+	P
+}
+
+##############################################################################
+
+grid_plot <- function(Z, 
+	title="", 
+	zlab="MFI Type", 
+	ylim=c(0,100), ylab="% of Population", 
+	xlim=c(0,100), xlab="MSNE (%)",
+	show_points = TRUE,
+	show_lines = TRUE,
+	show_errorbars = FALSE,
+	log_x = FALSE
+) {
+	P <- small_plot(Z, show_points=show_points, show_lines=show_lines, show_errorbars=show_errorbars) +
+	labs(title=title, x=xlab, y=ylab, color=zlab, shape=zlab)
+	
+	if (log_x == TRUE) {
+		P <- P + scale_x_continuous(trans="log2",
+			breaks = scales::trans_breaks("log2", function(x) 2^x)
+			#labels = scales::trans_format("log2", scales::math_format(2^.x))
+			)
+	} else {
+		P <- P + scale_x_continuous(limits=xlim, breaks = seq(xlim[1], xlim[2], by = xlim[2]/5))
+	}
+	
+	P <- P + scale_y_continuous(limits=ylim, breaks = seq(ylim[1], ylim[2], by = ylim[2]/5))
+	
+	P <- P + 
+	facet_grid(rows=vars(y2), cols=vars(x2), switch="both", as.table=FALSE)
+
+	G <- groups_info()
+
+	P <- P +
+	scale_color_manual(values = G[,pcol], labels=G[,lab]) +
+	scale_shape_manual(values = G[,shape], labels=G[,lab])
+	
+	
+	P
+}
+
+##############################################################################
+
+wrap_plot <- function(Z, 
+	title="", 
+	zlab="MFI Type", 
+	ylim=c(0,100), ylab="% of Population", 
+	xlim=c(0,100), xlab="MSNE (%)",
+	show_points = TRUE,
+	show_lines = TRUE,
+	show_errorbars = FALSE,
+	log_x = FALSE,
+	ncol=2
+) {
+	P <- small_plot(Z, show_points=show_points, show_lines=show_lines, show_errorbars=show_errorbars) +
+	labs(title=title, x=xlab, y=ylab, color=zlab, shape=zlab)
+	
+	if (log_x == TRUE) {
+		P <- P + scale_x_continuous(trans="log2",
+			breaks = scales::trans_breaks("log2", function(x) 2^x)
+			#labels = scales::trans_format("log2", scales::math_format(2^.x))
+			)
+	} else {
+		P <- P + scale_x_continuous(limits=xlim, breaks = seq(xlim[1], xlim[2], by = xlim[2]/5))
+	}
+	
+	P <- P + scale_y_continuous(limits=ylim, breaks = seq(ylim[1], ylim[2], by = ylim[2]/5))
+	
+	P <- P + 
+	facet_wrap(~ x2, ncol=ncol)
+
+	G <- groups_info()
+
+	P <- P +
+	scale_color_manual(values = G[,pcol], labels=G[,lab]) +
+	scale_shape_manual(values = G[,shape], labels=G[,lab])
+	
+	
+	P
+}
+
+##############################################################################
+
+##############################################################################
+
+heatmap <- function(Z, 
+	title="", 
+	zlab="% of Population", 
+	ylim=c(0,100), ylab="%", 
+	xlim=c(0,100), xlab="MSNE",
+	high.col="blue",
+	low.col="white"
+) {
+	P <- ggplot(Z, aes(x=x, y=y, z=z, fill=z)) +
+	theme_light(base_size = 11) +
+	theme(
+		plot.title = element_text(size=11), 
+		axis.title.x = element_text(size=11), 
+		axis.title.y = element_text(size=11),
+		#legend.position = "right",
+		#legend.position = c(.8, .95),
+   		#legend.justification = c("right", "top"),
+   		legend.box.just = "right",
+		legend.margin = margin(6, 6, 6, 6)
+	) +
+	labs(title=title, x=xlab, y=ylab, color=zlab, shape=zlab) #+
+	
+	P <- P +
+	#scale_x_discrete() +
+	#scale_y_discrete()
+	scale_x_continuous(limits=xlim, breaks = seq(xlim[1], xlim[2], by = xlim[2]/5)) +
+	scale_y_continuous(limits=ylim, breaks = seq(ylim[1], ylim[2], by = ylim[2]/5))
+	
+	P <- P + geom_tile() +
+	scale_fill_gradient(low=low.col, high=high.col)
+	#scale_fill_distiller(palette = "RdPu")
+	#scale_fill_viridis(discrete=FALSE)
 	P
 }
 
@@ -559,7 +722,13 @@ plot_memory_icbd <- function(D) {
 
 ##############################################################################
 
-save_plot <- function(P, filename="test.png", dpi=150, units="px", width=750, height=500) {
+save_plot <- function(P, filename="test.png", dpi=150, units="px", width=600, height=400) {
+	ggsave(P, filename=filename, dpi=dpi, units=units, width=width, height=height)
+}
+
+##############################################################################
+
+save_grid_plot <- function(P, filename="test.png", dpi=150, units="px", width=600, height=600) {
 	ggsave(P, filename=filename, dpi=dpi, units=units, width=width, height=height)
 }
 

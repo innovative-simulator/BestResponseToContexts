@@ -52,6 +52,10 @@ D_CBeU_Ine <- file_processed("BestResponseToContexts experiment_CBeliefs_v_Inert
 
 D_CBeU_Pop <- file_processed("BestResponseToContexts experiment_CBeliefs_Pop-table.csv")
 
+#D_Mem50_InitDegree <- file_processed("BestResponseToContexts experiment_Mem50_MSNE_InitDeg-table.csv")
+#D_Mem50_Response <- file_processed("BestResponseToContexts experiment_Mem50_MSNE_ResponseChoice-table.csv")
+
+
 ##############################################################################
 ##############################################################################
 
@@ -229,54 +233,160 @@ source("common_code.R")
 P <- plot_msne(D_MSNE)
 P
 save_plot(P, filename="Fig_MSNE.png")
-P <- plot_icbd_msne(D_MSNE)
+P <- plot_msne_icbd(D_MSNE)
 P
 
-unique(D_MSNE_Vars[,Memory])
-unique(D_MSNE_Vars[,Inertia])
+Mem_levels <- sapply(sort(unique(D_MSNE_Vars[, Memory]), decreasing=TRUE), function(x) paste0("Memory = ", x))
+Mem_levels 
+Ine_levels <- sapply(sort(unique(D_MSNE_Vars[, Inertia]), decreasing=TRUE), function(x) paste0("Inertia = ", x))
+Ine_levels 
+CB_levels <- sapply(sort(unique(D_MSNE_Vars[, Num.CBeliefs]), decreasing=TRUE), function(x) paste0("CBs = ", x))
+CB_levels 
 unique(D_MSNE_Vars[,Num.People])
-unique(D_MSNE_Vars[,Num.CBeliefs])
-plot_msne(D_MSNE_Vars[Inertia==90 & Memory==90 & Num.CBeliefs==4 & Num.People==200])
-plot_msne(D_MSNE_Vars[Inertia==50 & Memory==90 & Num.CBeliefs==4 & Num.People==200])
-plot_msne(D_MSNE_Vars[Inertia==90 & Memory==50 & Num.CBeliefs==4 & Num.People==200])
+
+grid_plot(D_MSNE_Vars[Memory==90 & Num.People==200,.(x=MSNE, y=Mean.Perc.of.Pop, z=MFI.Type, x2=factor(paste0("Inertia = ", Inertia), levels=Ine_levels), y2=factor(paste0("CBs = ", Num.CBeliefs), levels=CB_levels))])
+grid_plot(D_MSNE_Vars[Memory==50 & Num.People==200,.(x=MSNE, y=Mean.Perc.of.Pop, z=MFI.Type, x2=factor(paste0("Inertia = ", Inertia), levels=Ine_levels), y2=factor(paste0("CBs = ", Num.CBeliefs), levels=CB_levels))])
+grid_plot(D_MSNE_Vars[Memory==90 & Num.People==50,.(x=MSNE, y=Mean.Perc.of.Pop, z=MFI.Type, x2=factor(paste0("Inertia = ", Inertia), levels=Ine_levels), y2=factor(paste0("CBs = ", Num.CBeliefs), levels=CB_levels))])
+grid_plot(D_MSNE_Vars[Memory==50 & Num.People==50,.(x=MSNE, y=Mean.Perc.of.Pop, z=MFI.Type, x2=factor(paste0("Inertia = ", Inertia), levels=Ine_levels), y2=factor(paste0("CBs = ", Num.CBeliefs), levels=CB_levels))])
+
+source("common_code.R")
+
+P <- grid_plot(D_MSNE_Vars[Memory==90 & Num.People==200,.(x=MSNE, y=Mean.Perc.of.Pop, z=MFI.Type, x2=factor(paste0("Inertia = ", Inertia), levels=Ine_levels), y2=factor(paste0("CBs = ", Num.CBeliefs), levels=CB_levels))])
+save_grid_plot(P, filename="Fig_MSNE_Perc_Ine_CBs.png")
+
+
+grid_plot(D_MSNE_Vars[Inertia==90 & Num.People==200,.(x=MSNE, y=Mean.Perc.of.Pop, z=MFI.Type, x2=factor(paste0("Memory = ", Memory), levels=Mem_levels), y2=factor(paste0("CBs = ", Num.CBeliefs), levels=CB_levels))])
+grid_plot(D_MSNE_Vars[Inertia==50 & Num.People==200,.(x=MSNE, y=Mean.Perc.of.Pop, z=MFI.Type, x2=factor(paste0("Memory = ", Memory), levels=Mem_levels), y2=factor(paste0("CBs = ", Num.CBeliefs), levels=CB_levels))])
+grid_plot(D_MSNE_Vars[Inertia==90 & Num.People==50,.(x=MSNE, y=Mean.Perc.of.Pop, z=MFI.Type, x2=factor(paste0("Memory = ", Memory), levels=Mem_levels), y2=factor(paste0("CBs = ", Num.CBeliefs), levels=CB_levels))])
+grid_plot(D_MSNE_Vars[Inertia==50 & Num.People==50,.(x=MSNE, y=Mean.Perc.of.Pop, z=MFI.Type, x2=factor(paste0("Memory = ", Memory), levels=Mem_levels), y2=factor(paste0("CBs = ", Num.CBeliefs), levels=CB_levels))])
+
+P <- grid_plot(D_MSNE_Vars[Inertia==90 & Num.People==200,.(x=MSNE, y=Mean.Perc.of.Pop, z=MFI.Type, x2=factor(paste0("Memory = ", Memory), levels=Mem_levels), y2=factor(paste0("CBs = ", Num.CBeliefs), levels=CB_levels))])
+save_grid_plot(P, filename="Fig_MSNE_Perc_Mem_CBs.png")
+
+
+
+
+# Num.CBeliefs. Region of MSNE that produce Dominance broadens with CBeliefs
 plot_msne(D_MSNE_Vars[Inertia==90 & Memory==90 & Num.CBeliefs==2 & Num.People==200])
+plot_msne(D_MSNE_Vars[Inertia==90 & Memory==90 & Num.CBeliefs==4 & Num.People==200])
 plot_msne(D_MSNE_Vars[Inertia==90 & Memory==90 & Num.CBeliefs==8 & Num.People==200])
 plot_msne(D_MSNE_Vars[Inertia==90 & Memory==90 & Num.CBeliefs==16 & Num.People==200])
-plot_msne(D_MSNE_Vars[Inertia==90 & Memory==90 & Num.CBeliefs==4 & Num.People==50])
-# OMG!!
-plot_msne(D_MSNE_Vars[Inertia==50 & Memory==50 & Num.CBeliefs==2 & Num.People==200])
-plot_msne(D_MSNE_Vars[Inertia==50 & Memory==50 & Num.CBeliefs==4 & Num.People==200])
-plot_msne(D_MSNE_Vars[Inertia==50 & Memory==50 & Num.CBeliefs==8 & Num.People==200])
-plot_msne(D_MSNE_Vars[Inertia==50 & Memory==50 & Num.CBeliefs==16 & Num.People==200])
 
-plot_icbd_msne(D_MSNE_Vars[Inertia==50 & Memory==50 & Num.CBeliefs==2 & Num.People==200])
-plot_icbd_msne(D_MSNE_Vars[Inertia==50 & Memory==50 & Num.CBeliefs==4 & Num.People==200])
-plot_icbd_msne(D_MSNE_Vars[Inertia==50 & Memory==50 & Num.CBeliefs==8 & Num.People==200])
-plot_icbd_msne(D_MSNE_Vars[Inertia==50 & Memory==50 & Num.CBeliefs==16 & Num.People==200])
-
+# Memory==50. Changes!
 plot_msne(D_MSNE_Vars[Inertia==90 & Memory==50 & Num.CBeliefs==2 & Num.People==200])
 plot_msne(D_MSNE_Vars[Inertia==90 & Memory==50 & Num.CBeliefs==4 & Num.People==200])
 plot_msne(D_MSNE_Vars[Inertia==90 & Memory==50 & Num.CBeliefs==8 & Num.People==200])
 plot_msne(D_MSNE_Vars[Inertia==90 & Memory==50 & Num.CBeliefs==16 & Num.People==200])
+
+# Inertia==50. Response to MSNE not as broad as with Inertia==90
+plot_msne(D_MSNE_Vars[Inertia==50 & Memory==90 & Num.CBeliefs==2 & Num.People==200])
+plot_msne(D_MSNE_Vars[Inertia==50 & Memory==90 & Num.CBeliefs==4 & Num.People==200])
+plot_msne(D_MSNE_Vars[Inertia==50 & Memory==90 & Num.CBeliefs==8 & Num.People==200])
+plot_msne(D_MSNE_Vars[Inertia==50 & Memory==90 & Num.CBeliefs==16 & Num.People==200])
+
+# Pop==50
+plot_msne(D_MSNE_Vars[Inertia==90 & Memory==90 & Num.CBeliefs==2 & Num.People==50])
+plot_msne(D_MSNE_Vars[Inertia==90 & Memory==90 & Num.CBeliefs==4 & Num.People==50])
+plot_msne(D_MSNE_Vars[Inertia==90 & Memory==90 & Num.CBeliefs==8 & Num.People==50])
+plot_msne(D_MSNE_Vars[Inertia==90 & Memory==90 & Num.CBeliefs==16 & Num.People==50])
 
 plot_msne(D_MSNE_Vars[Inertia==50 & Memory==90 & Num.CBeliefs==2 & Num.People==200])
 plot_msne(D_MSNE_Vars[Inertia==50 & Memory==90 & Num.CBeliefs==4 & Num.People==200])
 plot_msne(D_MSNE_Vars[Inertia==50 & Memory==90 & Num.CBeliefs==8 & Num.People==200])
 plot_msne(D_MSNE_Vars[Inertia==50 & Memory==90 & Num.CBeliefs==16 & Num.People==200])
 
-P <- plot_msne(D_MSNE_Vars[Inertia==50 & Memory==50 & Num.CBeliefs==8 & Num.People==200])
+P <- plot_msne(D_MSNE_Vars[Inertia==90 & Memory==50 & Num.CBeliefs==8 & Num.People==200])
 P
-save_plot(P, filename="Fig_I50_M50_CB8_P200.png")
+save_plot(P, filename="Fig_I90_M50_CB8_P200.png")
+
+D_CBe_Ine_IP <- rbind(D_CBe_Ine, D_CBeU_Ine)
+
+unique(D_CBe_Ine_IP[,Inertia])
+unique(D_CBeU_Ine[,Num.CBeliefs])
+unique(D_CBeU_Ine[,MSNE])
+
+Ine_levels2 <- sapply(sort(unique(D_CBe_Ine_IP[, Inertia]), decreasing=TRUE), function(x) paste0("Inertia = ", x))
+Ine_levels2 
+
+source("common_code.R")
+
+P <- grid_plot(D_CBe_Ine_IP[Inertia!=40, .(x=Num.CBeliefs, y=Mean.Perc.of.Pop, z=MFI.Type, y2=factor(paste0("Inertia = ", Inertia), levels=Ine_levels2), x2=Init.Positions)], xlim=c(0, 200), log_x=TRUE)
+P
+save_plot(P, filename="Fig_CBe_Perc_IPos_Ine.png", height=800)
+
+
+# Ups and downs at CB>=64
+plot_cbeliefs(D_CBeU_Ine[Inertia==20])
+plot_cbeliefs(D_CBeU_Ine[Inertia==40])
+plot_cbeliefs(D_CBeU_Ine[Inertia==60])
+plot_cbeliefs(D_CBeU_Ine[Inertia==80])
+plot_cbeliefs(D_CBeU_Ine[Inertia==90])
+plot_cbeliefs(D_CBeU_Ine[Inertia==95])
+plot_cbeliefs(D_CBeU_Ine[Inertia==100])
+
+P <- wrap_plot(D_CBe_Ine[Inertia!=40, .(x=Num.CBeliefs, y=Mean.Perc.of.Pop, z=MFI.Type, x2=factor(paste0("Inertia = ", Inertia), levels=Ine_levels2))], xlim=c(0, 200), log_x=TRUE)
+P
+save_plot(P, filename="Fig_CBe_Perc_Ine.png", height=800)
+
+P <- wrap_plot(D_CBeU_Ine[Inertia!=40, .(x=Num.CBeliefs, y=Mean.Perc.of.Pop, z=MFI.Type, x2=factor(paste0("Inertia = ", Inertia), levels=Ine_levels2))], xlim=c(0, 200), log_x=TRUE)
+P
+save_plot(P, filename="Fig_CBeU_Perc_Ine.png", height=800)
 
 
 P <- plot_cbeliefs(D_CBeU_Ine[Inertia==90])
 P
 save_plot(P, filename="Fig_CBeliefs.png")
 
+unique(D_CBe_Ine[,Inertia])
+unique(D_CBe_Ine[,Num.CBeliefs])
+
+plot_cbeliefs(D_CBe_Ine[Inertia==20])
+plot_cbeliefs(D_CBe_Ine[Inertia==40])
+plot_cbeliefs(D_CBe_Ine[Inertia==60])
+plot_cbeliefs(D_CBe_Ine[Inertia==80])
+plot_cbeliefs(D_CBe_Ine[Inertia==90])
+plot_cbeliefs(D_CBe_Ine[Inertia==95])
+plot_cbeliefs(D_CBe_Ine[Inertia==100])
+
 P <- plot_cbeliefs(D_CBe_Ine[Inertia==90])
 P
 save_plot(P, filename="Fig_CBeliefsMatched.png")
 
+
+unique(D_CBeU_Pop[,Num.People])
+unique(D_CBeU_Pop[,Num.CBeliefs])
+unique(D_CBeU_Pop[,Init.Positions])
+unique(D_CBeU_Pop[,Init.Attribs])
+
+Pop_levels <- sapply(sort(unique(D_CBeU_Pop[, Num.People]), decreasing=FALSE), function(x) paste0("Pop = ", x))
+Pop_levels 
+
+CBe_levels <- sapply(sort(unique(D_CBeU_Pop[, Num.CBeliefs]), decreasing=FALSE), function(x) paste0("CBs = ", x))
+CBe_levels 
+
+P <- wrap_plot(D_CBeU_Pop[Init.Attribs=="Random", .(x=Num.CBeliefs, y=Mean.Perc.of.Pop, z=MFI.Type, x2=factor(paste0("Pop = ", Num.People), levels=Pop_levels))], xlim=c(0, 200), log_x=TRUE)
+P
+
+P <- wrap_plot(D_CBeU_Pop[Init.Attribs=="Random" & Init.Positions=="Random" & Num.CBeliefs %in% c(1, 2, 4, 8, 12, 16), .(x=Num.People, y=Mean.Perc.of.Pop, z=MFI.Type, x2=factor(paste0("CBs = ", Num.CBeliefs), levels=CBe_levels))], xlim=c(0, 200), log_x=TRUE)
+P
+save_plot(P, filename="Fig_Pop_Perc_CBe.png", height=800)
+
+# HH falls with CBeliefs
+plot_people(D_CBeU_Pop[Num.CBeliefs==1 & Init.Positions=="Random" & Init.Attribs=="Random" & Num.CBeliefs<Num.People])
+plot_people(D_CBeU_Pop[Num.CBeliefs==2 & Init.Positions=="Random" & Init.Attribs=="Random" & Num.CBeliefs<Num.People])
+plot_people(D_CBeU_Pop[Num.CBeliefs==4 & Init.Positions=="Random" & Init.Attribs=="Random" & Num.CBeliefs<Num.People])
+plot_people(D_CBeU_Pop[Num.CBeliefs==8 & Init.Positions=="Random" & Init.Attribs=="Random" & Num.CBeliefs<Num.People])
+plot_people(D_CBeU_Pop[Num.CBeliefs==16 & Init.Positions=="Random" & Init.Attribs=="Random" & Num.CBeliefs<Num.People])
+plot_people(D_CBeU_Pop[Num.CBeliefs==64 & Init.Positions=="Random" & Init.Attribs=="Random" & Num.CBeliefs<Num.People])
+plot_people(D_CBeU_Pop[Num.CBeliefs==100 & Init.Positions=="Random" & Init.Attribs=="Random" & Num.CBeliefs<Num.People])
+plot_people(D_CBeU_Pop[Num.CBeliefs==196 & Init.Positions=="Random" & Init.Attribs=="Random" & Num.CBeliefs<Num.People])
+plot_people(D_CBeU_Pop[Num.CBeliefs==200 & Init.Positions=="Random" & Init.Attribs=="Random" & Num.CBeliefs<Num.People])
+
+# Triangular Grid and At Other Agents make little difference
+plot_people(D_CBeU_Pop[Num.CBeliefs==4 & Init.Positions=="Random" & Init.Attribs=="Random" & Num.CBeliefs<Num.People])
+plot_people(D_CBeU_Pop[Num.CBeliefs==4 & Init.Positions=="Random" & Init.Attribs=="Triangular Grid" & Num.CBeliefs<Num.People])
+plot_people(D_CBeU_Pop[Num.CBeliefs==4 & Init.Positions=="At Other Agents" & Init.Attribs=="Random" & Num.CBeliefs<Num.People])
+plot_people(D_CBeU_Pop[Num.CBeliefs==4 & Init.Positions=="At Other Agents" & Init.Attribs=="Triangular Grid" & Num.CBeliefs<Num.People])
 
 P <- plot_people(D_CBeU_Pop[Num.CBeliefs==4 & Init.Positions=="Random" & Init.Attribs=="Random"])
 P
@@ -284,18 +394,73 @@ P <- plot_people(D_Pop)
 P
 save_plot(P, filename="Fig_People.png")
 
+
+
+unique(D_CBe_Mem[, Memory])
+unique(D_CBe_Mem[, Num.CBeliefs])
+plot_memory(D_CBe_Mem[Num.CBeliefs==1])
+plot_memory(D_CBe_Mem[Num.CBeliefs==2])
+plot_memory(D_CBe_Mem[Num.CBeliefs==4])
+plot_memory(D_CBe_Mem[Num.CBeliefs==8])
+plot_memory(D_CBe_Mem[Num.CBeliefs==16])
+
+plot_cbeliefs(D_CBe_Mem[Memory==30])
+plot_cbeliefs(D_CBe_Mem[Memory==50])
+plot_cbeliefs(D_CBe_Mem[Memory==70])
+plot_cbeliefs(D_CBe_Mem[Memory==90])
+
+
+unique(D_Ine_Mem[, Inertia])
+unique(D_Ine_Mem[, Memory])
+
+plot_inertia(D_Ine_Mem[Memory==30])
+plot_inertia(D_Ine_Mem[Memory==50])
+plot_inertia(D_Ine_Mem[Memory==70])
+plot_inertia(D_Ine_Mem[Memory==90])
+
+plot_inertia(D_CBe_Ine[Num.CBeliefs==1])
+plot_inertia(D_CBe_Ine[Num.CBeliefs==2])
+plot_inertia(D_CBe_Ine[Num.CBeliefs==4])
+plot_inertia(D_CBe_Ine[Num.CBeliefs==8])
+plot_inertia(D_CBe_Ine[Num.CBeliefs==16])
+plot_inertia(D_CBe_Ine[Num.CBeliefs==64])
+plot_inertia(D_CBe_Ine[Num.CBeliefs==100])
+plot_inertia(D_CBe_Ine[Num.CBeliefs==200])
+
 P <- plot_inertia(D_Ine_Mem[Memory==90])
 P
 save_plot(P, filename="Fig_Inertia.png")
 
-P <- plot_memory(D_CBe_Mem[Num.CBeliefs==4])
-P
-P <- plot_memory(D_Ine_Mem[Inertia==90])
-P
+
+plot_memory(D_Ine_Mem[Inertia==0])
+plot_memory(D_Ine_Mem[Inertia==20])
+plot_memory(D_Ine_Mem[Inertia==50])
+plot_memory(D_Ine_Mem[Inertia==70])
+plot_memory(D_Ine_Mem[Inertia==90])
+plot_memory(D_Ine_Mem[Inertia==95])
+plot_memory(D_Ine_Mem[Inertia==97.5])
+plot_memory(D_Ine_Mem[Inertia==100])
+
 P <- plot_memory(D_Mem)
 P
 save_plot(P, filename="Fig_Memory.png")
 
+
+##############################################################################
+# Heatmap
+
+source("common_code.R")
+
+names(D_Ine_Mem)
+unique(D_Ine_Mem[, MFI.Type])
+heatmap(D_MSNE_Vars[MFI.Type=="HD" & Memory==90 & Num.CBeliefs==4,.(x=MSNE, y=Inertia, z=Mean.Perc.of.Pop)])
+heatmap(D_MSNE_Vars[MFI.Type=="HD" & Memory==90 & Inertia==90,.(x=MSNE, y=Num.CBeliefs, z=Mean.Perc.of.Pop)], ylim=c(0, 200))
+
+heatmap(D_MSNE_Vars[MFI.Type=="HD" & Num.CBeliefs==4 & Inertia==90,.(x=MSNE, y=Memory, z=Mean.Perc.of.Pop)])
+heatmap(D_MSNE_Vars[MFI.Type=="HD" & Num.CBeliefs==8 & Inertia==90,.(x=MSNE, y=Memory, z=Mean.Perc.of.Pop)])
+
+
+heatmap(D_Ine_Mem[MFI.Type=="HD" & Num.CBeliefs==4 & MSNE==90,.(x=Inertia, y=Memory, z=Mean.Perc.of.Pop)], xlab="Inertia", ylab="Memory")
 
 
 ##############################################################################
