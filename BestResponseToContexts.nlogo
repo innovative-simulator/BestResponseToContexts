@@ -171,6 +171,8 @@ end
 
 to-report msne
   report base-msne
+
+  ; What if agents on one side had different MSNE?
 ;  if not is-turtle? self [
 ;    report base-msne
 ;  ]
@@ -525,13 +527,13 @@ to go
 
   tick
 
-;  set num-by-i-type map [a -> a] array:to-list cur-num-by-i-type ; This would have been fine.
-  set num-by-i-type (map [[a b] -> ; This was a mistake. Smoothing overkill. Makes no difference to stats from converged models though.
-    0.01 * (
-      statistics-retention * a +
-      (100 - statistics-retention) * b
-    )
-  ] num-by-i-type (array:to-list cur-num-by-i-type))
+  set num-by-i-type map [a -> a] array:to-list cur-num-by-i-type ; This is been fine.
+;  set num-by-i-type (map [[a b] -> ; This was a mistake. Smoothing overkill. Makes no difference to stats from converged models though.
+;    0.01 * (
+;      statistics-retention * a +
+;      (100 - statistics-retention) * b
+;    )
+;  ] num-by-i-type (array:to-list cur-num-by-i-type))
 
   calc-sorted-people-by-mfi-type
   update-time-series-plots
@@ -1591,7 +1593,7 @@ INPUTBOX
 357
 680
 Run-Length
-4000.0
+40000.0
 1
 0
 Number
@@ -4240,7 +4242,23 @@ NetLogo 6.2.2
     <enumeratedValueSet variable="Number-Of-C-Beliefs">
       <value value="4"/>
     </enumeratedValueSet>
-    <steppedValueSet variable="Memory" first="0" step="5" last="100"/>
+    <enumeratedValueSet variable="Memory">
+      <value value="50"/>
+      <value value="55"/>
+      <value value="60"/>
+      <value value="62.5"/>
+      <value value="65"/>
+      <value value="67.5"/>
+      <value value="70"/>
+      <value value="72.5"/>
+      <value value="75"/>
+      <value value="80"/>
+      <value value="85"/>
+      <value value="90"/>
+      <value value="95"/>
+      <value value="97.5"/>
+      <value value="100"/>
+    </enumeratedValueSet>
     <enumeratedValueSet variable="Inertia">
       <value value="90"/>
     </enumeratedValueSet>
@@ -4372,14 +4390,17 @@ NetLogo 6.2.2
     </enumeratedValueSet>
     <enumeratedValueSet variable="Number-Of-People">
       <value value="16"/>
-      <value value="36"/>
+      <value value="23"/>
+      <value value="32"/>
+      <value value="45"/>
       <value value="64"/>
-      <value value="100"/>
-      <value value="144"/>
-      <value value="196"/>
+      <value value="91"/>
+      <value value="128"/>
+      <value value="181"/>
+      <value value="200"/>
       <value value="256"/>
-      <value value="324"/>
-      <value value="400"/>
+      <value value="362"/>
+      <value value="512"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="Initial-Degree-Of-Belief">
       <value value="&quot;Base-MSNE&quot;"/>
@@ -4627,22 +4648,10 @@ NetLogo 6.2.2
     <enumeratedValueSet variable="Number-Of-C-Beliefs">
       <value value="1"/>
       <value value="2"/>
-      <value value="3"/>
       <value value="4"/>
-      <value value="6"/>
       <value value="8"/>
       <value value="12"/>
       <value value="16"/>
-      <value value="24"/>
-      <value value="36"/>
-      <value value="48"/>
-      <value value="64"/>
-      <value value="100"/>
-      <value value="144"/>
-      <value value="196"/>
-      <value value="256"/>
-      <value value="324"/>
-      <value value="400"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="Memory">
       <value value="90"/>
@@ -4778,11 +4787,10 @@ NetLogo 6.2.2
       <value value="4"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="Memory">
-      <value value="10"/>
-      <value value="30"/>
       <value value="50"/>
       <value value="70"/>
       <value value="90"/>
+      <value value="95"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="Inertia">
       <value value="0"/>
@@ -4920,6 +4928,10 @@ NetLogo 6.2.2
       <value value="4"/>
       <value value="8"/>
       <value value="16"/>
+      <value value="100"/>
+      <value value="140"/>
+      <value value="180"/>
+      <value value="200"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="Memory">
       <value value="90"/>
@@ -5365,11 +5377,10 @@ NetLogo 6.2.2
       <value value="200"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="Memory">
-      <value value="10"/>
-      <value value="30"/>
       <value value="50"/>
       <value value="70"/>
       <value value="90"/>
+      <value value="95"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="Inertia">
       <value value="90"/>
@@ -5515,6 +5526,7 @@ NetLogo 6.2.2
       <value value="90"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="Inertia">
+      <value value="0"/>
       <value value="20"/>
       <value value="40"/>
       <value value="60"/>
@@ -5787,17 +5799,15 @@ NetLogo 6.2.2
     <metric>mean-icb-distance-by-mfi 3</metric>
     <steppedValueSet variable="Base-MSNE" first="0" step="5" last="100"/>
     <enumeratedValueSet variable="Number-Of-C-Beliefs">
-      <value value="1"/>
       <value value="2"/>
       <value value="4"/>
-      <value value="6"/>
       <value value="8"/>
-      <value value="12"/>
       <value value="16"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="Memory">
       <value value="100"/>
       <value value="90"/>
+      <value value="70"/>
       <value value="50"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="Inertia">
@@ -7053,6 +7063,545 @@ NetLogo 6.2.2
       <value value="20"/>
       <value value="50"/>
       <value value="100"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Perc-Right-Hand-Side">
+      <value value="50"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Clustering-Weight">
+      <value value="0"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Statistics-Retention">
+      <value value="90"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Run-Length">
+      <value value="2000"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="MSNE-Margin">
+      <value value="5"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="HD-Value">
+      <value value="10"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="MFI-Network-Radius">
+      <value value="4"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Ticks-Between-Network-Updates">
+      <value value="100"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Ticks-Between-Plot-Updates">
+      <value value="100"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Ticks-Until-Shock">
+      <value value="-1"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Shock-Repeats?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Shock-Code">
+      <value value="&quot;&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Seed-Setup">
+      <value value="0"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Seed-Go">
+      <value value="0"/>
+    </enumeratedValueSet>
+  </experiment>
+  <experiment name="experiment_MSNE_Memory" repetitions="20" runMetricsEveryStep="false">
+    <setup>setup</setup>
+    <go>go</go>
+    <final>do-final-stats</final>
+    <metric>previous-seed-setup</metric>
+    <metric>previous-seed-go</metric>
+    <metric>timer</metric>
+    <metric>hd-cost-of-conflict</metric>
+    <metric>msne-exp-payoff</metric>
+    <metric>noise-payoff</metric>
+    <metric>item 0 payoffs</metric>
+    <metric>item 1 payoffs</metric>
+    <metric>item 2 payoffs</metric>
+    <metric>item 3 payoffs</metric>
+    <metric>count people</metric>
+    <metric>count C-Beliefs</metric>
+    <metric>perc-played-hawk</metric>
+    <metric>perc-played-dove</metric>
+    <metric>perc-interaction-type 0</metric>
+    <metric>perc-interaction-type 1</metric>
+    <metric>perc-interaction-type 2</metric>
+    <metric>perc-interaction-type 3</metric>
+    <metric>mean-payoff-by-mfi 0</metric>
+    <metric>mean-payoff-by-mfi 1</metric>
+    <metric>mean-payoff-by-mfi 2</metric>
+    <metric>mean-payoff-by-mfi 3</metric>
+    <metric>perc-events-dd</metric>
+    <metric>perc-events-hh</metric>
+    <metric>perc-events-dhhd</metric>
+    <metric>perc-always-hawk</metric>
+    <metric>perc-play-mixture</metric>
+    <metric>perc-always-dove</metric>
+    <metric>perc-best-response-dove</metric>
+    <metric>perc-best-response-msne</metric>
+    <metric>perc-best-response-hawk</metric>
+    <metric>perc-beliefs-between 0 20</metric>
+    <metric>perc-beliefs-between 20 40</metric>
+    <metric>perc-beliefs-between 40 60</metric>
+    <metric>perc-beliefs-between 60 80</metric>
+    <metric>perc-beliefs-between 80 101</metric>
+    <metric>num-mfi-components-larger-than 0</metric>
+    <metric>num-mfi-components-larger-than 1</metric>
+    <metric>num-mfi-components-larger-than 5</metric>
+    <metric>first first mfi-component-sizes</metric>
+    <metric>last first mfi-component-sizes</metric>
+    <metric>perc-self-hawkish-mfi-type 0</metric>
+    <metric>perc-self-hawkish-mfi-type 1</metric>
+    <metric>perc-self-hawkish-mfi-type 2</metric>
+    <metric>perc-self-hawkish-mfi-type 3</metric>
+    <metric>mean-icb-distance-by-mfi 0</metric>
+    <metric>mean-icb-distance-by-mfi 1</metric>
+    <metric>mean-icb-distance-by-mfi 2</metric>
+    <metric>mean-icb-distance-by-mfi 3</metric>
+    <steppedValueSet variable="Base-MSNE" first="0" step="5" last="100"/>
+    <enumeratedValueSet variable="Number-Of-C-Beliefs">
+      <value value="2"/>
+      <value value="4"/>
+      <value value="8"/>
+      <value value="16"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Memory">
+      <value value="100"/>
+      <value value="90"/>
+      <value value="70"/>
+      <value value="50"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Inertia">
+      <value value="90"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Epsilon">
+      <value value="0"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Number-Of-People">
+      <value value="50"/>
+      <value value="200"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Initial-Degree-Of-Belief">
+      <value value="&quot;Base-MSNE&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Initial-C-Belief-Positions">
+      <value value="&quot;Random&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Initial-Person-Attributes">
+      <value value="&quot;Random&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Perc-Right-Hand-Side">
+      <value value="50"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Clustering-Weight">
+      <value value="0"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Statistics-Retention">
+      <value value="90"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Run-Length">
+      <value value="2000"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="MSNE-Margin">
+      <value value="5"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="HD-Value">
+      <value value="10"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="MFI-Network-Radius">
+      <value value="4"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Ticks-Between-Network-Updates">
+      <value value="100"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Ticks-Between-Plot-Updates">
+      <value value="100"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Ticks-Until-Shock">
+      <value value="-1"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Shock-Repeats?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Shock-Code">
+      <value value="&quot;&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Seed-Setup">
+      <value value="0"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Seed-Go">
+      <value value="0"/>
+    </enumeratedValueSet>
+  </experiment>
+  <experiment name="experiment_MSNE_Inertia" repetitions="20" runMetricsEveryStep="false">
+    <setup>setup</setup>
+    <go>go</go>
+    <final>do-final-stats</final>
+    <metric>previous-seed-setup</metric>
+    <metric>previous-seed-go</metric>
+    <metric>timer</metric>
+    <metric>hd-cost-of-conflict</metric>
+    <metric>msne-exp-payoff</metric>
+    <metric>noise-payoff</metric>
+    <metric>item 0 payoffs</metric>
+    <metric>item 1 payoffs</metric>
+    <metric>item 2 payoffs</metric>
+    <metric>item 3 payoffs</metric>
+    <metric>count people</metric>
+    <metric>count C-Beliefs</metric>
+    <metric>perc-played-hawk</metric>
+    <metric>perc-played-dove</metric>
+    <metric>perc-interaction-type 0</metric>
+    <metric>perc-interaction-type 1</metric>
+    <metric>perc-interaction-type 2</metric>
+    <metric>perc-interaction-type 3</metric>
+    <metric>mean-payoff-by-mfi 0</metric>
+    <metric>mean-payoff-by-mfi 1</metric>
+    <metric>mean-payoff-by-mfi 2</metric>
+    <metric>mean-payoff-by-mfi 3</metric>
+    <metric>perc-events-dd</metric>
+    <metric>perc-events-hh</metric>
+    <metric>perc-events-dhhd</metric>
+    <metric>perc-always-hawk</metric>
+    <metric>perc-play-mixture</metric>
+    <metric>perc-always-dove</metric>
+    <metric>perc-best-response-dove</metric>
+    <metric>perc-best-response-msne</metric>
+    <metric>perc-best-response-hawk</metric>
+    <metric>perc-beliefs-between 0 20</metric>
+    <metric>perc-beliefs-between 20 40</metric>
+    <metric>perc-beliefs-between 40 60</metric>
+    <metric>perc-beliefs-between 60 80</metric>
+    <metric>perc-beliefs-between 80 101</metric>
+    <metric>num-mfi-components-larger-than 0</metric>
+    <metric>num-mfi-components-larger-than 1</metric>
+    <metric>num-mfi-components-larger-than 5</metric>
+    <metric>first first mfi-component-sizes</metric>
+    <metric>last first mfi-component-sizes</metric>
+    <metric>perc-self-hawkish-mfi-type 0</metric>
+    <metric>perc-self-hawkish-mfi-type 1</metric>
+    <metric>perc-self-hawkish-mfi-type 2</metric>
+    <metric>perc-self-hawkish-mfi-type 3</metric>
+    <metric>mean-icb-distance-by-mfi 0</metric>
+    <metric>mean-icb-distance-by-mfi 1</metric>
+    <metric>mean-icb-distance-by-mfi 2</metric>
+    <metric>mean-icb-distance-by-mfi 3</metric>
+    <steppedValueSet variable="Base-MSNE" first="0" step="5" last="100"/>
+    <enumeratedValueSet variable="Number-Of-C-Beliefs">
+      <value value="2"/>
+      <value value="4"/>
+      <value value="8"/>
+      <value value="16"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Memory">
+      <value value="90"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Inertia">
+      <value value="100"/>
+      <value value="90"/>
+      <value value="50"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Epsilon">
+      <value value="0"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Number-Of-People">
+      <value value="50"/>
+      <value value="200"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Initial-Degree-Of-Belief">
+      <value value="&quot;Base-MSNE&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Initial-C-Belief-Positions">
+      <value value="&quot;Random&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Initial-Person-Attributes">
+      <value value="&quot;Random&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Perc-Right-Hand-Side">
+      <value value="50"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Clustering-Weight">
+      <value value="0"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Statistics-Retention">
+      <value value="90"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Run-Length">
+      <value value="2000"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="MSNE-Margin">
+      <value value="5"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="HD-Value">
+      <value value="10"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="MFI-Network-Radius">
+      <value value="4"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Ticks-Between-Network-Updates">
+      <value value="100"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Ticks-Between-Plot-Updates">
+      <value value="100"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Ticks-Until-Shock">
+      <value value="-1"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Shock-Repeats?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Shock-Code">
+      <value value="&quot;&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Seed-Setup">
+      <value value="0"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Seed-Go">
+      <value value="0"/>
+    </enumeratedValueSet>
+  </experiment>
+  <experiment name="experiment_Memory_CBeliefs" repetitions="100" sequentialRunOrder="false" runMetricsEveryStep="false">
+    <setup>setup</setup>
+    <go>go</go>
+    <final>do-final-stats</final>
+    <metric>previous-seed-setup</metric>
+    <metric>previous-seed-go</metric>
+    <metric>timer</metric>
+    <metric>hd-cost-of-conflict</metric>
+    <metric>msne-exp-payoff</metric>
+    <metric>noise-payoff</metric>
+    <metric>item 0 payoffs</metric>
+    <metric>item 1 payoffs</metric>
+    <metric>item 2 payoffs</metric>
+    <metric>item 3 payoffs</metric>
+    <metric>count people</metric>
+    <metric>count C-Beliefs</metric>
+    <metric>perc-played-hawk</metric>
+    <metric>perc-played-dove</metric>
+    <metric>perc-interaction-type 0</metric>
+    <metric>perc-interaction-type 1</metric>
+    <metric>perc-interaction-type 2</metric>
+    <metric>perc-interaction-type 3</metric>
+    <metric>mean-payoff-by-mfi 0</metric>
+    <metric>mean-payoff-by-mfi 1</metric>
+    <metric>mean-payoff-by-mfi 2</metric>
+    <metric>mean-payoff-by-mfi 3</metric>
+    <metric>perc-events-dd</metric>
+    <metric>perc-events-hh</metric>
+    <metric>perc-events-dhhd</metric>
+    <metric>perc-always-hawk</metric>
+    <metric>perc-play-mixture</metric>
+    <metric>perc-always-dove</metric>
+    <metric>perc-best-response-dove</metric>
+    <metric>perc-best-response-msne</metric>
+    <metric>perc-best-response-hawk</metric>
+    <metric>perc-beliefs-between 0 20</metric>
+    <metric>perc-beliefs-between 20 40</metric>
+    <metric>perc-beliefs-between 40 60</metric>
+    <metric>perc-beliefs-between 60 80</metric>
+    <metric>perc-beliefs-between 80 101</metric>
+    <metric>num-mfi-components-larger-than 0</metric>
+    <metric>num-mfi-components-larger-than 1</metric>
+    <metric>num-mfi-components-larger-than 5</metric>
+    <metric>first first mfi-component-sizes</metric>
+    <metric>last first mfi-component-sizes</metric>
+    <metric>perc-self-hawkish-mfi-type 0</metric>
+    <metric>perc-self-hawkish-mfi-type 1</metric>
+    <metric>perc-self-hawkish-mfi-type 2</metric>
+    <metric>perc-self-hawkish-mfi-type 3</metric>
+    <metric>mean-icb-distance-by-mfi 0</metric>
+    <metric>mean-icb-distance-by-mfi 1</metric>
+    <metric>mean-icb-distance-by-mfi 2</metric>
+    <metric>mean-icb-distance-by-mfi 3</metric>
+    <enumeratedValueSet variable="Base-MSNE">
+      <value value="90"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Number-Of-C-Beliefs">
+      <value value="2"/>
+      <value value="4"/>
+      <value value="8"/>
+      <value value="16"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Memory">
+      <value value="50"/>
+      <value value="55"/>
+      <value value="60"/>
+      <value value="62.5"/>
+      <value value="65"/>
+      <value value="67.5"/>
+      <value value="70"/>
+      <value value="72.5"/>
+      <value value="75"/>
+      <value value="80"/>
+      <value value="85"/>
+      <value value="90"/>
+      <value value="95"/>
+      <value value="97.5"/>
+      <value value="100"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Inertia">
+      <value value="90"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Epsilon">
+      <value value="0"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Number-Of-People">
+      <value value="200"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Initial-Degree-Of-Belief">
+      <value value="&quot;Base-MSNE&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Initial-C-Belief-Positions">
+      <value value="&quot;Random&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Initial-Person-Attributes">
+      <value value="&quot;Random&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Perc-Right-Hand-Side">
+      <value value="50"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Clustering-Weight">
+      <value value="0"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Statistics-Retention">
+      <value value="90"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Run-Length">
+      <value value="2000"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="MSNE-Margin">
+      <value value="5"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="HD-Value">
+      <value value="10"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="MFI-Network-Radius">
+      <value value="4"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Ticks-Between-Network-Updates">
+      <value value="100"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Ticks-Between-Plot-Updates">
+      <value value="100"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Ticks-Until-Shock">
+      <value value="-1"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Shock-Repeats?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Shock-Code">
+      <value value="&quot;&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Seed-Setup">
+      <value value="0"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Seed-Go">
+      <value value="0"/>
+    </enumeratedValueSet>
+  </experiment>
+  <experiment name="experiment_Memory_Inertia_CBeliefs_MSNE" repetitions="20" sequentialRunOrder="false" runMetricsEveryStep="false">
+    <setup>setup</setup>
+    <go>go</go>
+    <final>do-final-stats</final>
+    <metric>previous-seed-setup</metric>
+    <metric>previous-seed-go</metric>
+    <metric>timer</metric>
+    <metric>hd-cost-of-conflict</metric>
+    <metric>msne-exp-payoff</metric>
+    <metric>noise-payoff</metric>
+    <metric>item 0 payoffs</metric>
+    <metric>item 1 payoffs</metric>
+    <metric>item 2 payoffs</metric>
+    <metric>item 3 payoffs</metric>
+    <metric>count people</metric>
+    <metric>count C-Beliefs</metric>
+    <metric>perc-played-hawk</metric>
+    <metric>perc-played-dove</metric>
+    <metric>perc-interaction-type 0</metric>
+    <metric>perc-interaction-type 1</metric>
+    <metric>perc-interaction-type 2</metric>
+    <metric>perc-interaction-type 3</metric>
+    <metric>mean-payoff-by-mfi 0</metric>
+    <metric>mean-payoff-by-mfi 1</metric>
+    <metric>mean-payoff-by-mfi 2</metric>
+    <metric>mean-payoff-by-mfi 3</metric>
+    <metric>perc-events-dd</metric>
+    <metric>perc-events-hh</metric>
+    <metric>perc-events-dhhd</metric>
+    <metric>perc-always-hawk</metric>
+    <metric>perc-play-mixture</metric>
+    <metric>perc-always-dove</metric>
+    <metric>perc-best-response-dove</metric>
+    <metric>perc-best-response-msne</metric>
+    <metric>perc-best-response-hawk</metric>
+    <metric>perc-beliefs-between 0 20</metric>
+    <metric>perc-beliefs-between 20 40</metric>
+    <metric>perc-beliefs-between 40 60</metric>
+    <metric>perc-beliefs-between 60 80</metric>
+    <metric>perc-beliefs-between 80 101</metric>
+    <metric>num-mfi-components-larger-than 0</metric>
+    <metric>num-mfi-components-larger-than 1</metric>
+    <metric>num-mfi-components-larger-than 5</metric>
+    <metric>first first mfi-component-sizes</metric>
+    <metric>last first mfi-component-sizes</metric>
+    <metric>perc-self-hawkish-mfi-type 0</metric>
+    <metric>perc-self-hawkish-mfi-type 1</metric>
+    <metric>perc-self-hawkish-mfi-type 2</metric>
+    <metric>perc-self-hawkish-mfi-type 3</metric>
+    <metric>mean-icb-distance-by-mfi 0</metric>
+    <metric>mean-icb-distance-by-mfi 1</metric>
+    <metric>mean-icb-distance-by-mfi 2</metric>
+    <metric>mean-icb-distance-by-mfi 3</metric>
+    <enumeratedValueSet variable="Base-MSNE">
+      <value value="50"/>
+      <value value="90"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Number-Of-C-Beliefs">
+      <value value="2"/>
+      <value value="4"/>
+      <value value="8"/>
+      <value value="16"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Memory">
+      <value value="50"/>
+      <value value="55"/>
+      <value value="60"/>
+      <value value="62.5"/>
+      <value value="65"/>
+      <value value="67.5"/>
+      <value value="70"/>
+      <value value="72.5"/>
+      <value value="75"/>
+      <value value="80"/>
+      <value value="85"/>
+      <value value="90"/>
+      <value value="95"/>
+      <value value="97.5"/>
+      <value value="100"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Inertia">
+      <value value="100"/>
+      <value value="95"/>
+      <value value="90"/>
+      <value value="50"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Epsilon">
+      <value value="0"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Number-Of-People">
+      <value value="200"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Initial-Degree-Of-Belief">
+      <value value="&quot;Base-MSNE&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Initial-C-Belief-Positions">
+      <value value="&quot;Random&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Initial-Person-Attributes">
+      <value value="&quot;Random&quot;"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="Perc-Right-Hand-Side">
       <value value="50"/>
