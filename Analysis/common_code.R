@@ -154,8 +154,8 @@ common_plot <- function(Z,
 		plot.title = element_text(size=11), 
 		axis.title.x = element_text(size=11), 
 		axis.title.y = element_text(size=11),
-		panel.grid.major = element_line(color="gray"),
-		panel.grid.minor = element_line(color="gray"),
+		panel.grid.major = element_line(color="lightgray"),
+		panel.grid.minor = element_line(color="lightgray"),
 		#legend.position = "right",
 		#legend.position = c(.8, .95),
    		#legend.justification = c("right", "top"),
@@ -163,7 +163,7 @@ common_plot <- function(Z,
 		legend.margin = margin(6, 6, 6, 6)
 	)
 
-	if (show_points == TRUE) {P <- P + geom_point(size=2, stroke=1)}
+	if (show_points == TRUE) {P <- P + geom_point(size=1.5, stroke=0.75)}
 
 	if (show_errorbars == TRUE) {P <- P + 
 #		geom_errorbar(aes(ymin=y.lower, ymax=y.upper), width=2, position=position_dodge(0)) +
@@ -171,7 +171,7 @@ common_plot <- function(Z,
 	}
 	
 	if (show_lines == TRUE) {P <- P + 
-		geom_line(linewidth=1)
+		geom_line(linewidth=0.5)
 	}
 	
 	P
@@ -191,7 +191,7 @@ small_plot <- function(Z,
 		plot.title = element_text(size=10), 
 		axis.title.x = element_text(size=10), 
 		axis.title.y = element_text(size=10),
-		panel.grid.major = element_line(color="gray"),
+		panel.grid.major = element_line(color="lightgray"),
 		#panel.grid.minor = element_line(color="gray"),
 		#legend.position = "right",
 		#legend.position = c(.8, .95),
@@ -200,13 +200,13 @@ small_plot <- function(Z,
 		legend.margin = margin(6, 6, 6, 6)
 	)
 
-	if (show_points == TRUE) {P <- P + geom_point(size=1, stroke=0.5)}
-
 	if (show_errorbars == TRUE) {P <- P + 
 #		geom_errorbar(aes(ymin=y.lower, ymax=y.upper), width=2, position=position_dodge(0)) +
-		geom_errorbar(aes(ymin=y.lower, ymax=y.upper), width=0.5)
+		geom_errorbar(aes(ymin=y.lower, ymax=y.upper), width=0.25, size=1)
 	}
 	
+	if (show_points == TRUE) {P <- P + geom_point(size=1, stroke=0.5)}
+
 	if (show_lines == TRUE) {P <- P + 
 		geom_line(linewidth=0.5)
 	}
@@ -680,12 +680,12 @@ plot_memory <- function(D) {
 		], 
 		title=paste0("CBs=", cur.num.cbs, "; MSNE=", cur.msne, "; Ine=", cur.ine, "; N=", cur.pop), 
 		xlab="Memory (%)", 
-		xlim=c(0,100), 
+		xlim=c(50,100), 
 		zlab="MFI Type", 
 		ylim=c(0,100), ylab="% of Population", 
 		show_points = TRUE,
 		show_lines = TRUE,
-		show_errorbars = FALSE
+		show_errorbars = TRUE
 	)
 	P
 }
@@ -734,7 +734,64 @@ save_grid_plot <- function(P, filename="test.png", dpi=150, units="px", width=60
 
 ##############################################################################
 
-##############################################################################
+unique_all <- function(D) {
+	for (v in c(
+		"MSNE",
+		"Inertia",
+		"Memory",
+		"Num.CBeliefs",
+		"Num.People",
+		"Init.Attribs",
+		"Init.Positions",
+		"Init.Degree",
+		"Stats.Retention"
+	)) {
+		print(v)
+		print(unique(D[, get(v)]))
+	}
+	
+}
 
 ##############################################################################
 
+mem_mult <- function(mem=90, d0=90.0, A=c(0, 1)) {
+	d <- d0
+	Y <- 0 * 1:(1 + length(A))
+	Y[1] <- d
+	for (i in 1:(length(A))) {
+		d <- 0.01 * (d * mem + (100 - mem) * 100 * A[i])
+		Y[i + 1] <- d
+	}
+	return(Y)
+}
+
+##############################################################################
+
+mem_roll <- function(mem.len=10, d0=90.0, A=c(0, 1)) {
+	num1 <- round(0.01 * mem.len * d0)
+	d <- sapply(1:num1, function(x) 1)
+	d <- sample(append(d, sapply(1:(mem.len - length(d)), function(x) 0)))
+	
+	Y <- 0 * 1:(1 + length(A))
+	Y[1] <- 100 * mean(d)
+	for (i in 1:(length(A))) {
+		d <- append(A[i], d[1:(mem.len - 1)])
+		Y[i + 1] <- 100 * mean(d)
+	}
+	return(Y)
+	
+}
+
+##############################################################################
+
+plot_memory_dynamics <- function(MD) {
+	P <- ggplot(MD, aes(x=x, y=y, z=z, color=z))
+	P <- P + theme_light()
+	P <- P + geom_line(linewidth=1)
+	P <- P + labs(title="", x="Round", y="Degree of Belief", color="Method", shape="Method")
+	P <- P + scale_x_continuous(limits=c(0, rl), breaks = seq(0, rl, by = rl/5))
+	P <- P + scale_y_continuous(limits=c(0, 100), breaks = seq(0, 100, by = 100/5))
+	P
+}
+
+##############################################################################
