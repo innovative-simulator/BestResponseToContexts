@@ -11,6 +11,9 @@ globals [
   sorted-people
   current-person
 
+  world-wraps-h?
+  world-wraps-v?
+
 ;  payoffs-list
 ;  msne
 
@@ -72,6 +75,7 @@ c-links-own [
 to setup
   clear-all
   foreach sort patches [pa -> ask pa [set pcolor patch-color]]
+  setup-world-wraps
 ;  set msne current-msne
 ;  set payoffs-list payoffs
   setup-rng "seed-setup"
@@ -110,6 +114,36 @@ to setup-rng [given-variable-name]
     run (word "set previous-" given-variable-name " " given-variable-name)
   ]
   random-seed runresult (word "previous-" given-variable-name)
+end
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+to setup-world-wraps
+  ; Useful, if trying to change xcor and ycor using setxy, and not face, fd, distance
+  let d [distance patch max-pxcor max-pycor] of patch min-pxcor min-pycor
+  set d precision (d * d) 3
+  (ifelse
+    (d = 2) [
+      set world-wraps-h? true
+      set world-wraps-v? true
+      stop
+    ]
+    (d = ((world-width - 1) ^ 2) + ((world-height - 1) ^ 2)) [
+      set world-wraps-h? false
+      set world-wraps-v? false
+      stop
+    ]
+  )
+  set d [distance patch min-pxcor max-pycor] of patch min-pxcor min-pycor
+  set d precision (d * d) 3
+  if d = 1 [
+    set world-wraps-h? false
+    set world-wraps-v? true
+    stop
+  ]
+  set world-wraps-h? true
+  set world-wraps-v? false
+
 end
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -458,6 +492,7 @@ to highlight
     ask cl [
       set hidden? false
       set thickness 0.5
+      set color [color] of end1
       ask end2 [
         set hidden? false
         set size 2 * size
@@ -521,13 +556,13 @@ to go
     ask alter [choose-action-against ego]
     ask ego [
       update-degree-of-belief-against alter
-      update-c-belief-against alter
+      update-relevance-against alter
       update-pp-stats [pp-action] of alter
       run recolor-person-method
     ]
     ask alter [
       update-degree-of-belief-against ego
-      update-c-belief-against ego
+      update-relevance-against ego
       update-pp-stats [pp-action] of ego
       run recolor-person-method
     ]
@@ -663,7 +698,11 @@ end
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-to update-c-belief-against [given-opponent]
+to update-relevance-against [given-opponent]
+  ; Depending outcome (mis-matching actions?) of interaction,
+  ; make current C-Belief more or less relevant for dealing with given-opponent
+  ; Relevance here is based on spatial proximity.
+
   ; Remember: HD is a *mis-matching* game! Score 1 for a mis-match, 0 for a match
   ;let relevance-correction 1 ; Effectively what we ran before.
   let relevance-correction -1 + 2 * abs (pp-action - [pp-action] of given-opponent) ; Move towards those I mis-match, away from those I match.
@@ -675,17 +714,75 @@ to update-c-belief-against [given-opponent]
     ; Works whether world wraps or not:
     face given-opponent
     fd (0.01 * (100 - inertia) * relevance-correction * (distance given-opponent))
-    ;fd (0.01 * (100 - inertia) * (distance given-opponent))
 
-    ; Introduces artefacts if world wraps:
-;    setxy
-;    (0.01 * ((xcor * inertia) + (([xcor] of given-opponent) * (100 - inertia))))
-;    (0.01 * ((ycor * inertia) + (([ycor] of given-opponent) * (100 - inertia))))
-
-
+    ; More complicated. and slower! (But seems to match the above in effect.)
+;    setxy (cb-next-xcor xcor ([xcor] of given-opponent) relevance-correction) (cb-next-ycor ycor ([ycor] of given-opponent) relevance-correction)
+    ; Will be useful if attribute-space has more than 2 dimensions.
 
   ]
 
+end
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+to-report cb-next-xcor [a-cor b-cor relevance-sign]
+  ; Take a jump from a-cor to b-cor in the shortest direction (depending on world-wraps-_?)
+  if world-wraps-h? [
+    report wrapped-xcor (
+      a-cor +
+      relevance-sign * 0.01 * (100 - inertia) * shortest-jump a-cor b-cor world-width
+    )
+  ]
+  report a-cor + relevance-sign * 0.01 * (100 - inertia) * (b-cor - a-cor)
+end
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+to-report cb-next-ycor [a-cor b-cor relevance-sign]
+  ; As cb-next-xcor, but with world-wraps-v?, wrapped-ycor, world-height
+  if world-wraps-v? [
+    report wrapped-ycor (
+      a-cor +
+      relevance-sign * 0.01 * (100 - inertia) * shortest-jump a-cor b-cor world-height
+    )
+  ]
+  report a-cor + relevance-sign * 0.01 * (100 - inertia) * (b-cor - a-cor)
+end
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+to-report wrapped-xcor [given-xcor]
+  if (given-xcor < min-pxcor - 0.5) [report (given-xcor + world-width)]
+  if (given-xcor >= max-pxcor + 0.5) [report (given-xcor - world-width)]
+  report given-xcor
+end
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+to-report wrapped-ycor [given-ycor]
+  ; As wrapped-xcor, but with min-pycor, max-pycor, world-height
+  if (given-ycor < min-pycor - 0.5) [report (given-ycor + world-height)]
+  if (given-ycor >= max-pycor + 0.5) [report (given-ycor - world-height)]
+  report given-ycor
+end
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+to-report shortest-jump [from-cor to-cor world-size]
+  ifelse (to-cor > from-cor) [
+    ifelse (2 * (to-cor - from-cor) < world-size) [
+      report to-cor - from-cor
+    ] [
+      report to-cor - from-cor - world-size
+    ]
+  ] [
+    ifelse (2 * (from-cor - to-cor) > world-size) [
+      report world-size + to-cor - from-cor
+    ] [
+      report to-cor - from-cor
+    ]
+  ]
+  report false ; Should not happen.
 end
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -872,7 +969,7 @@ end
 
 to-report interaction-colors
   ; Both D, DH, HD, HH
-  report (list lime (yellow - 1) blue red)
+  report (list dd-color dh-color hd-color hh-color)
 end
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -893,7 +990,7 @@ end
 
 to-report pp-most-freq-interaction-calculated
   let max-val max pp-freqs
-  report last one-of filter [fa -> max-val = first fa] (map [[f a] -> list f a] pp-freqs [0 1 2 3])
+  report one-of filter [a -> max-val = item a pp-freqs] [0 1 2 3]
 end
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -920,11 +1017,11 @@ end
 
 to recolor-patch-by-people
   if any? people-here [
-    set pcolor 3 + one-of modes [color] of people-here
+    set pcolor 4 + one-of modes [color] of people-here
     stop
   ]
   if any? neighbors with [any? people-here] [
-    set pcolor 3 + one-of modes reduce sentence map [pp -> [color] of pp] [people-here] of neighbors
+    set pcolor 4 + one-of modes reduce sentence map [pp -> [color] of pp] [people-here] of neighbors
     stop
   ]
 end
@@ -944,14 +1041,22 @@ end
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-to recolor-patches-by-distance-to-c-beliefs
+to recolor-patches-by-distance-to-c-beliefs [min-max?]
   let sorted-patches sort patches
   let cbdists map [pa -> [mean [distance myself] of c-beliefs] of pa] sorted-patches
   let min-cbd min cbdists
   let max-cbd max cbdists
-  (foreach sorted-patches cbdists [[pa dist] ->
-    ask pa [ set pcolor scale-color turquoise dist min-cbd max-cbd ]
-  ])
+  ifelse min-max? [
+    (foreach sorted-patches cbdists [[pa dist] ->
+      ask pa [ set pcolor scale-color turquoise dist min-cbd max-cbd ]
+    ])
+  ]
+  [
+    (foreach sorted-patches cbdists [[pa dist] ->
+      ask pa [ set pcolor scale-color pink dist max-cbd min-cbd ]
+    ])
+  ]
+
 end
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -998,35 +1103,6 @@ to setup-time-series-plots
   set-plot-pen-color hawk-color
   set-plot-pen-mode 1
   set-plot-pen-interval ticks-between-plot-updates
-
-  ;let tmp-color-scheme (list (violet - 3) (violet - 1) (violet - 0) (violet + 1) (violet + 3))
-  ;let tmp-color-scheme (list (violet ) (blue) (green) (yellow) (red))
-  let tmp-color-scheme (list (violet + 3) (blue + 1) (green) (yellow - 1) (red - 2))
-
-;  set-current-plot "Beliefs"
-;  clear-plot
-;  set-current-plot-pen "50%"
-;  plotxy ticks 50
-;  create-temporary-plot-pen "80 - 100"
-;  set-plot-pen-color item 0 tmp-color-scheme
-;  set-plot-pen-mode 1
-;  set-plot-pen-interval ticks-between-plot-updates
-;  create-temporary-plot-pen "60 - 80"
-;  set-plot-pen-color item 1 tmp-color-scheme
-;  set-plot-pen-mode 1
-;  set-plot-pen-interval ticks-between-plot-updates
-;  create-temporary-plot-pen "40 - 60"
-;  set-plot-pen-color item 2 tmp-color-scheme
-;  set-plot-pen-mode 1
-;  set-plot-pen-interval ticks-between-plot-updates
-;  create-temporary-plot-pen "20 - 40"
-;  set-plot-pen-color item 3 tmp-color-scheme
-;  set-plot-pen-mode 1
-;  set-plot-pen-interval ticks-between-plot-updates
-;  create-temporary-plot-pen "0 - 20"
-;  set-plot-pen-color item 4 tmp-color-scheme
-;  set-plot-pen-mode 1
-;  set-plot-pen-interval ticks-between-plot-updates
 
 end
 
@@ -1120,26 +1196,6 @@ to update-time-series-plots-additionals
   plotxy ticks cur-val
   set-current-plot-pen "MSNE"
   plotxy ticks base-msne
-
-;  set-current-plot "Beliefs"
-;  set cur-val 0
-;  set-current-plot-pen "0 - 20"
-;  set cur-val cur-val + perc-beliefs-between 0 20
-;  plotxy ticks cur-val
-;  set-current-plot-pen "20 - 40"
-;  set cur-val cur-val + perc-beliefs-between 20 40
-;  plotxy ticks cur-val
-;  set-current-plot-pen "40 - 60"
-;  set cur-val cur-val + perc-beliefs-between 40 60
-;  plotxy ticks cur-val
-;  set-current-plot-pen "60 - 80"
-;  set cur-val cur-val + perc-beliefs-between 60 80
-;  plotxy ticks cur-val
-;  set-current-plot-pen "80 - 100"
-;  set cur-val cur-val + perc-beliefs-between 80 101
-;  plotxy ticks cur-val
-;  set-current-plot-pen "50%"
-;  plotxy ticks 50
 
   set-current-plot "Beliefs Histogram"
   clear-plot
@@ -1507,7 +1563,7 @@ to do-profile-test
 ;  let start-time timer
   repeat 0 [go]       ;; Simulate Warm-up period
   profiler:start         ;; start profiling
-  repeat 1000 [go]       ;; run something you want to measure
+  repeat 2000 [go]       ;; run something you want to measure
   profiler:stop          ;; stop profiling
   print profiler:report  ;; view the results
   profiler:reset         ;; clear the data
@@ -1552,7 +1608,7 @@ INPUTBOX
 167
 150
 Number-Of-People
-200.0
+196.0
 1
 0
 Number
@@ -1642,7 +1698,7 @@ INPUTBOX
 357
 680
 Run-Length
-80000.0
+2000.0
 1
 0
 Number
@@ -1748,9 +1804,9 @@ NIL
 
 BUTTON
 605
-660
+695
 762
-693
+728
 Patches to Patch-Color
 foreach sort patches [pa ->\nask pa [set pcolor patch-color]\n]
 NIL
@@ -1786,7 +1842,7 @@ INPUTBOX
 1562
 530
 Hawk-Color
-2.0
+4.0
 1
 0
 Color
@@ -1797,7 +1853,7 @@ INPUTBOX
 1562
 650
 Dove-Color
-7.0
+9.0
 1
 0
 Color
@@ -1808,7 +1864,7 @@ INPUTBOX
 1562
 590
 MSNE-Color
-4.0
+6.0
 1
 0
 Color
@@ -2045,7 +2101,7 @@ true
 PENS
 "DD: Peace" 1.0 0 -13840069 true "" ""
 "DH: Dominated" 1.0 0 -4079321 true "" ""
-"HD: Dominant" 1.0 0 -13345367 true "" ""
+"HD: Dominant" 1.0 0 -14730904 true "" ""
 "HH: Conflict" 1.0 0 -2674135 true "" ""
 
 SLIDER
@@ -2164,10 +2220,10 @@ NIL
 1
 
 BUTTON
-660
-725
-772
-758
+635
+740
+765
+773
 Shift People Up
 foreach sorted-people [pp ->\nask pp [setxy xcor (ycor + 5)]\n]
 NIL
@@ -2181,10 +2237,10 @@ NIL
 1
 
 BUTTON
-660
-760
-787
-793
+635
+775
+765
+808
 Shift C-Beliefs Up
 foreach sort c-beliefs [mn ->\nask mn [setxy xcor (ycor + 5)]\n]
 NIL
@@ -2225,7 +2281,7 @@ true
 PENS
 "DD: Peace" 1.0 0 -13840069 true "" ""
 "DH: Dominated" 1.0 0 -4079321 true "" ""
-"HD: Dominant" 1.0 0 -13345367 true "" ""
+"HD: Dominant" 1.0 0 -14730904 true "" ""
 "HH: Conflict" 1.0 0 -2674135 true "" ""
 "Noise" 1.0 0 -7500403 true "" ""
 "Exp = MSNE" 1.0 0 -8630108 true "" ""
@@ -2345,7 +2401,7 @@ MFI-Network-Radius
 MFI-Network-Radius
 0
 12
-3.9597979746446663
+4.0
 .25
 1
 Patches
@@ -2408,7 +2464,7 @@ true
 PENS
 "DD" 1.0 1 -13840069 true "" ""
 "DH" 1.0 1 -4079321 true "" ""
-"HD" 1.0 1 -13345367 true "" ""
+"HD" 1.0 1 -14730904 true "" ""
 "HH" 1.0 1 -2674135 true "" ""
 
 PLOT
@@ -2499,7 +2555,7 @@ true
 PENS
 "DD" 1.0 0 -13840069 true "" ""
 "DH" 1.0 0 -4079321 true "" ""
-"HD" 1.0 0 -13345367 true "" ""
+"HD" 1.0 0 -14730904 true "" ""
 "HH" 1.0 0 -2674135 true "" ""
 
 INPUTBOX
@@ -2508,7 +2564,7 @@ INPUTBOX
 167
 1035
 Seed-Setup
--5.16803351E8
+-1.925572583E9
 1
 0
 Number
@@ -2519,7 +2575,7 @@ INPUTBOX
 167
 1100
 Seed-Go
--1.20561956E9
+4.62326508E8
 1
 0
 Number
@@ -3007,7 +3063,7 @@ true
 PENS
 "DD: Peace" 1.0 0 -13840069 true "" ""
 "DH: Dominated" 1.0 0 -4079321 true "" ""
-"HD: Dominant" 1.0 0 -13345367 true "" ""
+"HD: Dominant" 1.0 0 -14730904 true "" ""
 "HH: Conflict" 1.0 0 -2674135 true "" ""
 
 PLOT
@@ -3085,10 +3141,10 @@ NIL
 BUTTON
 605
 625
-795
+810
 658
-Recolor Patches by CB Distance
-recolor-patches-by-distance-to-c-beliefs
+Recolor Patches by CB Distance (I)
+recolor-patches-by-distance-to-c-beliefs true
 NIL
 1
 T
@@ -3238,6 +3294,67 @@ Num-Halting-Tests-Passed
 17
 1
 11
+
+INPUTBOX
+1530
+900
+1645
+960
+HH-Color
+15.0
+1
+0
+Color
+
+INPUTBOX
+1410
+900
+1525
+960
+HD-Color
+103.0
+1
+0
+Color
+
+INPUTBOX
+1530
+835
+1645
+895
+DH-Color
+44.0
+1
+0
+Color
+
+INPUTBOX
+1410
+835
+1525
+895
+DD-Color
+65.0
+1
+0
+Color
+
+BUTTON
+605
+660
+810
+693
+Recolor Patches by CB-Distance (II)
+recolor-patches-by-distance-to-c-beliefs false
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
 
 @#$#@#$#@
 # Play Best Response Given Context-Dependent Beliefs
@@ -4352,7 +4469,9 @@ NetLogo 6.2.2
     </enumeratedValueSet>
     <enumeratedValueSet variable="Memory">
       <value value="50"/>
+      <value value="52.5"/>
       <value value="55"/>
+      <value value="57.5"/>
       <value value="60"/>
       <value value="62.5"/>
       <value value="65"/>
@@ -4360,11 +4479,16 @@ NetLogo 6.2.2
       <value value="70"/>
       <value value="72.5"/>
       <value value="75"/>
+      <value value="77.5"/>
       <value value="80"/>
+      <value value="82.5"/>
       <value value="85"/>
+      <value value="87.5"/>
       <value value="90"/>
+      <value value="92.5"/>
       <value value="95"/>
       <value value="97.5"/>
+      <value value="99"/>
       <value value="100"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="Inertia">
@@ -4395,7 +4519,7 @@ NetLogo 6.2.2
       <value value="90"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="Run-Length">
-      <value value="2000"/>
+      <value value="20000"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="MSNE-Margin">
       <value value="5"/>
@@ -4407,10 +4531,10 @@ NetLogo 6.2.2
       <value value="4"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="Ticks-Between-Network-Updates">
-      <value value="100"/>
+      <value value="1000"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="Ticks-Between-Plot-Updates">
-      <value value="100"/>
+      <value value="1000"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="Ticks-Until-Shock">
       <value value="-1"/>
@@ -8557,6 +8681,420 @@ NetLogo 6.2.2
     </enumeratedValueSet>
     <enumeratedValueSet variable="Ticks-Between-Plot-Updates">
       <value value="100"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Ticks-Until-Shock">
+      <value value="-1"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Shock-Repeats?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Shock-Code">
+      <value value="&quot;&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Seed-Setup">
+      <value value="0"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Seed-Go">
+      <value value="0"/>
+    </enumeratedValueSet>
+  </experiment>
+  <experiment name="experiment_Inertia_Memory_CBe" repetitions="20" sequentialRunOrder="false" runMetricsEveryStep="false">
+    <setup>setup</setup>
+    <go>go</go>
+    <final>do-final-stats</final>
+    <metric>previous-seed-setup</metric>
+    <metric>previous-seed-go</metric>
+    <metric>timer</metric>
+    <metric>hd-cost-of-conflict</metric>
+    <metric>msne-exp-payoff</metric>
+    <metric>noise-payoff</metric>
+    <metric>item 0 payoffs</metric>
+    <metric>item 1 payoffs</metric>
+    <metric>item 2 payoffs</metric>
+    <metric>item 3 payoffs</metric>
+    <metric>count people</metric>
+    <metric>count C-Beliefs</metric>
+    <metric>perc-played-hawk</metric>
+    <metric>perc-played-dove</metric>
+    <metric>perc-interaction-type 0</metric>
+    <metric>perc-interaction-type 1</metric>
+    <metric>perc-interaction-type 2</metric>
+    <metric>perc-interaction-type 3</metric>
+    <metric>mean-payoff-by-mfi 0</metric>
+    <metric>mean-payoff-by-mfi 1</metric>
+    <metric>mean-payoff-by-mfi 2</metric>
+    <metric>mean-payoff-by-mfi 3</metric>
+    <metric>perc-events-dd</metric>
+    <metric>perc-events-hh</metric>
+    <metric>perc-events-dhhd</metric>
+    <metric>perc-always-hawk</metric>
+    <metric>perc-play-mixture</metric>
+    <metric>perc-always-dove</metric>
+    <metric>perc-best-response-dove</metric>
+    <metric>perc-best-response-msne</metric>
+    <metric>perc-best-response-hawk</metric>
+    <metric>perc-beliefs-between 0 20</metric>
+    <metric>perc-beliefs-between 20 40</metric>
+    <metric>perc-beliefs-between 40 60</metric>
+    <metric>perc-beliefs-between 60 80</metric>
+    <metric>perc-beliefs-between 80 101</metric>
+    <metric>num-mfi-components-larger-than 0</metric>
+    <metric>num-mfi-components-larger-than 1</metric>
+    <metric>num-mfi-components-larger-than 5</metric>
+    <metric>first first mfi-component-sizes</metric>
+    <metric>last first mfi-component-sizes</metric>
+    <metric>perc-self-hawkish-mfi-type 0</metric>
+    <metric>perc-self-hawkish-mfi-type 1</metric>
+    <metric>perc-self-hawkish-mfi-type 2</metric>
+    <metric>perc-self-hawkish-mfi-type 3</metric>
+    <metric>mean-icb-distance-by-mfi 0</metric>
+    <metric>mean-icb-distance-by-mfi 1</metric>
+    <metric>mean-icb-distance-by-mfi 2</metric>
+    <metric>mean-icb-distance-by-mfi 3</metric>
+    <enumeratedValueSet variable="Base-MSNE">
+      <value value="90"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Number-Of-C-Beliefs">
+      <value value="2"/>
+      <value value="4"/>
+      <value value="8"/>
+      <value value="16"/>
+    </enumeratedValueSet>
+    <steppedValueSet variable="Memory" first="70" step="2" last="100"/>
+    <steppedValueSet variable="Inertia" first="70" step="2" last="100"/>
+    <enumeratedValueSet variable="Epsilon">
+      <value value="0"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Number-Of-People">
+      <value value="200"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Initial-Degree-Of-Belief">
+      <value value="&quot;Base-MSNE&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Initial-C-Belief-Positions">
+      <value value="&quot;Random&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Initial-Person-Attributes">
+      <value value="&quot;Random&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Perc-Right-Hand-Side">
+      <value value="50"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Clustering-Weight">
+      <value value="0"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Statistics-Retention">
+      <value value="90"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Run-Length">
+      <value value="2000"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="MSNE-Margin">
+      <value value="5"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="HD-Value">
+      <value value="10"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="MFI-Network-Radius">
+      <value value="4"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Ticks-Between-Network-Updates">
+      <value value="100"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Ticks-Between-Plot-Updates">
+      <value value="100"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Ticks-Until-Shock">
+      <value value="-1"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Shock-Repeats?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Shock-Code">
+      <value value="&quot;&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Seed-Setup">
+      <value value="0"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Seed-Go">
+      <value value="0"/>
+    </enumeratedValueSet>
+  </experiment>
+  <experiment name="experiment_CBeliefs_IP_Inertia" repetitions="20" sequentialRunOrder="false" runMetricsEveryStep="false">
+    <setup>setup</setup>
+    <go>go</go>
+    <final>do-final-stats</final>
+    <metric>previous-seed-setup</metric>
+    <metric>previous-seed-go</metric>
+    <metric>timer</metric>
+    <metric>hd-cost-of-conflict</metric>
+    <metric>msne-exp-payoff</metric>
+    <metric>noise-payoff</metric>
+    <metric>item 0 payoffs</metric>
+    <metric>item 1 payoffs</metric>
+    <metric>item 2 payoffs</metric>
+    <metric>item 3 payoffs</metric>
+    <metric>count people</metric>
+    <metric>count C-Beliefs</metric>
+    <metric>perc-played-hawk</metric>
+    <metric>perc-played-dove</metric>
+    <metric>perc-interaction-type 0</metric>
+    <metric>perc-interaction-type 1</metric>
+    <metric>perc-interaction-type 2</metric>
+    <metric>perc-interaction-type 3</metric>
+    <metric>mean-payoff-by-mfi 0</metric>
+    <metric>mean-payoff-by-mfi 1</metric>
+    <metric>mean-payoff-by-mfi 2</metric>
+    <metric>mean-payoff-by-mfi 3</metric>
+    <metric>perc-events-dd</metric>
+    <metric>perc-events-hh</metric>
+    <metric>perc-events-dhhd</metric>
+    <metric>perc-always-hawk</metric>
+    <metric>perc-play-mixture</metric>
+    <metric>perc-always-dove</metric>
+    <metric>perc-best-response-dove</metric>
+    <metric>perc-best-response-msne</metric>
+    <metric>perc-best-response-hawk</metric>
+    <metric>perc-beliefs-between 0 20</metric>
+    <metric>perc-beliefs-between 20 40</metric>
+    <metric>perc-beliefs-between 40 60</metric>
+    <metric>perc-beliefs-between 60 80</metric>
+    <metric>perc-beliefs-between 80 101</metric>
+    <metric>num-mfi-components-larger-than 0</metric>
+    <metric>num-mfi-components-larger-than 1</metric>
+    <metric>num-mfi-components-larger-than 5</metric>
+    <metric>first first mfi-component-sizes</metric>
+    <metric>last first mfi-component-sizes</metric>
+    <metric>perc-self-hawkish-mfi-type 0</metric>
+    <metric>perc-self-hawkish-mfi-type 1</metric>
+    <metric>perc-self-hawkish-mfi-type 2</metric>
+    <metric>perc-self-hawkish-mfi-type 3</metric>
+    <metric>mean-icb-distance-by-mfi 0</metric>
+    <metric>mean-icb-distance-by-mfi 1</metric>
+    <metric>mean-icb-distance-by-mfi 2</metric>
+    <metric>mean-icb-distance-by-mfi 3</metric>
+    <enumeratedValueSet variable="Base-MSNE">
+      <value value="90"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Number-Of-C-Beliefs">
+      <value value="1"/>
+      <value value="2"/>
+      <value value="3"/>
+      <value value="4"/>
+      <value value="5"/>
+      <value value="6"/>
+      <value value="8"/>
+      <value value="10"/>
+      <value value="12"/>
+      <value value="16"/>
+      <value value="24"/>
+      <value value="32"/>
+      <value value="48"/>
+      <value value="64"/>
+      <value value="80"/>
+      <value value="100"/>
+      <value value="120"/>
+      <value value="140"/>
+      <value value="160"/>
+      <value value="170"/>
+      <value value="180"/>
+      <value value="190"/>
+      <value value="200"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Memory">
+      <value value="90"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Inertia">
+      <value value="0"/>
+      <value value="20"/>
+      <value value="40"/>
+      <value value="60"/>
+      <value value="80"/>
+      <value value="90"/>
+      <value value="95"/>
+      <value value="100"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Epsilon">
+      <value value="0"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Number-Of-People">
+      <value value="200"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Initial-Degree-Of-Belief">
+      <value value="&quot;Base-MSNE&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Initial-C-Belief-Positions">
+      <value value="&quot;At Other Agents&quot;"/>
+      <value value="&quot;Random&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Initial-Person-Attributes">
+      <value value="&quot;Random&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Perc-Right-Hand-Side">
+      <value value="50"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Clustering-Weight">
+      <value value="0"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Statistics-Retention">
+      <value value="90"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Run-Length">
+      <value value="20000"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="MSNE-Margin">
+      <value value="5"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="HD-Value">
+      <value value="10"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="MFI-Network-Radius">
+      <value value="4"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Ticks-Between-Network-Updates">
+      <value value="1000"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Ticks-Between-Plot-Updates">
+      <value value="1000"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Ticks-Until-Shock">
+      <value value="-1"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Shock-Repeats?">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Shock-Code">
+      <value value="&quot;&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Seed-Setup">
+      <value value="0"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Seed-Go">
+      <value value="0"/>
+    </enumeratedValueSet>
+  </experiment>
+  <experiment name="experiment_Pop_CBe" repetitions="100" sequentialRunOrder="false" runMetricsEveryStep="false">
+    <setup>setup</setup>
+    <go>go</go>
+    <final>do-final-stats</final>
+    <metric>previous-seed-setup</metric>
+    <metric>previous-seed-go</metric>
+    <metric>timer</metric>
+    <metric>hd-cost-of-conflict</metric>
+    <metric>msne-exp-payoff</metric>
+    <metric>noise-payoff</metric>
+    <metric>item 0 payoffs</metric>
+    <metric>item 1 payoffs</metric>
+    <metric>item 2 payoffs</metric>
+    <metric>item 3 payoffs</metric>
+    <metric>count people</metric>
+    <metric>count C-Beliefs</metric>
+    <metric>perc-played-hawk</metric>
+    <metric>perc-played-dove</metric>
+    <metric>perc-interaction-type 0</metric>
+    <metric>perc-interaction-type 1</metric>
+    <metric>perc-interaction-type 2</metric>
+    <metric>perc-interaction-type 3</metric>
+    <metric>mean-payoff-by-mfi 0</metric>
+    <metric>mean-payoff-by-mfi 1</metric>
+    <metric>mean-payoff-by-mfi 2</metric>
+    <metric>mean-payoff-by-mfi 3</metric>
+    <metric>perc-events-dd</metric>
+    <metric>perc-events-hh</metric>
+    <metric>perc-events-dhhd</metric>
+    <metric>perc-always-hawk</metric>
+    <metric>perc-play-mixture</metric>
+    <metric>perc-always-dove</metric>
+    <metric>perc-best-response-dove</metric>
+    <metric>perc-best-response-msne</metric>
+    <metric>perc-best-response-hawk</metric>
+    <metric>perc-beliefs-between 0 20</metric>
+    <metric>perc-beliefs-between 20 40</metric>
+    <metric>perc-beliefs-between 40 60</metric>
+    <metric>perc-beliefs-between 60 80</metric>
+    <metric>perc-beliefs-between 80 101</metric>
+    <metric>num-mfi-components-larger-than 0</metric>
+    <metric>num-mfi-components-larger-than 1</metric>
+    <metric>num-mfi-components-larger-than 5</metric>
+    <metric>first first mfi-component-sizes</metric>
+    <metric>last first mfi-component-sizes</metric>
+    <metric>perc-self-hawkish-mfi-type 0</metric>
+    <metric>perc-self-hawkish-mfi-type 1</metric>
+    <metric>perc-self-hawkish-mfi-type 2</metric>
+    <metric>perc-self-hawkish-mfi-type 3</metric>
+    <metric>mean-icb-distance-by-mfi 0</metric>
+    <metric>mean-icb-distance-by-mfi 1</metric>
+    <metric>mean-icb-distance-by-mfi 2</metric>
+    <metric>mean-icb-distance-by-mfi 3</metric>
+    <enumeratedValueSet variable="Base-MSNE">
+      <value value="90"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Number-Of-C-Beliefs">
+      <value value="1"/>
+      <value value="2"/>
+      <value value="4"/>
+      <value value="6"/>
+      <value value="8"/>
+      <value value="16"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Memory">
+      <value value="90"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Inertia">
+      <value value="90"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Epsilon">
+      <value value="0"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Number-Of-People">
+      <value value="16"/>
+      <value value="23"/>
+      <value value="32"/>
+      <value value="45"/>
+      <value value="64"/>
+      <value value="91"/>
+      <value value="128"/>
+      <value value="181"/>
+      <value value="200"/>
+      <value value="256"/>
+      <value value="362"/>
+      <value value="512"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Initial-Degree-Of-Belief">
+      <value value="&quot;Base-MSNE&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Initial-C-Belief-Positions">
+      <value value="&quot;Random&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Initial-Person-Attributes">
+      <value value="&quot;Random&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Perc-Right-Hand-Side">
+      <value value="50"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Clustering-Weight">
+      <value value="0"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Statistics-Retention">
+      <value value="90"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Run-Length">
+      <value value="10000"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="MSNE-Margin">
+      <value value="5"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="HD-Value">
+      <value value="10"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="MFI-Network-Radius">
+      <value value="4"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Ticks-Between-Network-Updates">
+      <value value="1000"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Ticks-Between-Plot-Updates">
+      <value value="1000"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="Ticks-Until-Shock">
       <value value="-1"/>
