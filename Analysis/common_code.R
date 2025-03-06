@@ -376,7 +376,7 @@ heatmap <- function(Z,
 	low.col="white"
 ) {
 	P <- ggplot(Z, aes(x=x, y=y, z=z, fill=z)) +
-	theme_light(base_size = 11) +
+	theme_bw(base_size = 11) +
 	theme(
 		plot.title = element_text(size=11), 
 		axis.title.x = element_text(size=11), 
@@ -387,13 +387,14 @@ heatmap <- function(Z,
    		legend.box.just = "right",
 		legend.margin = margin(6, 6, 6, 6)
 	) +
-	labs(title=title, x=xlab, y=ylab, color=zlab, shape=zlab) #+
+	#labs(title=title, x=xlab, y=ylab, color=zlab, shape=zlab) #+
+	labs(title=title, x=xlab, y=ylab, fill=zlab) #+
 	
 	P <- P +
 	#scale_x_discrete() +
 	#scale_y_discrete()
-	scale_x_continuous(limits=xlim, breaks = seq(xlim[1], xlim[2], by = xlim[2]/5)) +
-	scale_y_continuous(limits=ylim, breaks = seq(ylim[1], ylim[2], by = ylim[2]/5))
+	scale_x_continuous(limits=xlim, breaks = seq(xlim[1], xlim[2], by = (xlim[2] - xlim[1])/5)) +
+	scale_y_continuous(limits=ylim, breaks = seq(ylim[1], ylim[2], by = (ylim[2] - ylim[1])/5))
 	
 	P <- P + geom_tile() +
 	scale_fill_gradient(low=low.col, high=high.col)
@@ -466,7 +467,7 @@ plot_msne <- function(D) {
 				y.upper=Mean.Perc.of.Pop + SE.Perc.of.Pop
 			)
 		], 
-		title=paste0("CBs=", cur.num.cbs, "; Ine=", cur.ine, "; Mem= ", cur.mem, "; N=", cur.pop), 
+		#title=paste0("CBs=", cur.num.cbs, "; Ine=", cur.ine, "; Mem= ", cur.mem, "; N=", cur.pop), 
 		xlab="MSNE (%)", 
 		xlim=c(0,100), 
 		zlab="MFI Type", 
@@ -496,7 +497,7 @@ plot_msne_icbd <- function(D) {
 				y.upper=Mean.ICB.Distance + SE.ICB.Distance
 			)
 		], 
-		title=paste0("CBs=", cur.num.cbs, "; Ine=", cur.ine, "; Mem= ", cur.mem, "; N=", cur.pop), 
+		#title=paste0("CBs=", cur.num.cbs, "; Ine=", cur.ine, "; Mem= ", cur.mem, "; N=", cur.pop), 
 		xlab="MSNE (%)", 
 		xlim=c(0,100), 
 		zlab="MFI Type", 
@@ -527,7 +528,7 @@ plot_cbeliefs <- function(D) {
 				y.upper=Mean.Perc.of.Pop + SE.Perc.of.Pop
 			)
 		], 
-		title=paste0("Pos=", cur.init.pos, "; MSNE=", cur.msne, "; Ine=", cur.ine, "; Mem=", cur.mem, "; N=", cur.pop), 
+		#title=paste0("Pos=", cur.init.pos, "; MSNE=", cur.msne, "; Ine=", cur.ine, "; Mem=", cur.mem, "; N=", cur.pop), 
 		xlab="Number of C-Beliefs", 
 		#xlim=c(0, max(D[, Num.CBeliefs])), 
 		zlab="MFI Type", 
@@ -558,7 +559,7 @@ plot_cbeliefs_icbd <- function(D) {
 				y.upper=Mean.ICB.Distance + SE.ICB.Distance
 			)
 		], 
-		title=paste0("Pos=", cur.init.pos, "; MSNE=", cur.msne, "; Ine=", cur.ine, "; Mem=", cur.mem, "; N=", cur.pop), 
+		#title=paste0("Pos=", cur.init.pos, "; MSNE=", cur.msne, "; Ine=", cur.ine, "; Mem=", cur.mem, "; N=", cur.pop), 
 		xlab="Number of C-Beliefs", 
 		#xlim=c(0, max(D[, Num.CBeliefs])), 
 		zlab="MFI Type", 
@@ -588,7 +589,7 @@ plot_people <- function(D) {
 				y.upper=Mean.Perc.of.Pop + SE.Perc.of.Pop
 			)
 		], 
-		title=paste0("CBs=", cur.num.cbs, "; MSNE=", cur.msne, "; Ine=", cur.ine, "; Mem=", cur.mem, ""), 
+		#title=paste0("CBs=", cur.num.cbs, "; MSNE=", cur.msne, "; Ine=", cur.ine, "; Mem=", cur.mem, ""), 
 		xlab="Number of People", 
 		#xlim=c(0, max(D[, Num.CBeliefs])), 
 		zlab="MFI Type", 
@@ -618,7 +619,7 @@ plot_inertia <- function(D) {
 				y.upper=Mean.Perc.of.Pop + SE.Perc.of.Pop
 			)
 		], 
-		title=paste0("CBs=", cur.num.cbs, "; MSNE=", cur.msne, "; Mem=", cur.mem, "; N=", cur.pop), 
+		#title=paste0("CBs=", cur.num.cbs, "; MSNE=", cur.msne, "; Mem=", cur.mem, "; N=", cur.pop), 
 		xlab="Inertia (%)", 
 		xlim=c(0,100), 
 		zlab="MFI Type", 
@@ -648,7 +649,7 @@ plot_inertia_icbd <- function(D) {
 				y.upper=Mean.ICB.Distance + SE.ICB.Distance
 			)
 		], 
-		title=paste0("CBs=", cur.num.cbs, "; MSNE=", cur.msne, "; Mem=", cur.mem, "; N=", cur.pop), 
+		#title=paste0("CBs=", cur.num.cbs, "; MSNE=", cur.msne, "; Mem=", cur.mem, "; N=", cur.pop), 
 		xlab="Inertia (%)", 
 		xlim=c(0,100), 
 		zlab="MFI Type", 
@@ -678,7 +679,7 @@ plot_memory <- function(D) {
 				y.upper=Mean.Perc.of.Pop + SE.Perc.of.Pop
 			)
 		], 
-		title=paste0("CBs=", cur.num.cbs, "; MSNE=", cur.msne, "; Ine=", cur.ine, "; N=", cur.pop), 
+		#title=paste0("CBs=", cur.num.cbs, "; MSNE=", cur.msne, "; Ine=", cur.ine, "; N=", cur.pop), 
 		xlab="Memory (%)", 
 		xlim=c(50,100), 
 		zlab="MFI Type", 
@@ -708,7 +709,7 @@ plot_memory_icbd <- function(D) {
 				y.upper=Mean.ICB.Distance + SE.ICB.Distance
 			)
 		], 
-		title=paste0("CBs=", cur.num.cbs, "; MSNE=", cur.msne, "; Ine=", cur.ine, "; N=", cur.pop), 
+		#title=paste0("CBs=", cur.num.cbs, "; MSNE=", cur.msne, "; Ine=", cur.ine, "; N=", cur.pop), 
 		xlab="Memory (%)", 
 		xlim=c(0,100), 
 		zlab="MFI Type", 
