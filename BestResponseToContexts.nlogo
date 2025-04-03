@@ -305,6 +305,7 @@ to setup-person-attributes
     Initial-Person-Attributes = "Random-Patch" [setup-person-attributes-random-patch]
     Initial-Person-Attributes = "Square Grid" [setup-person-attributes-square-grid]
     Initial-Person-Attributes = "Triangular Grid" [setup-person-attributes-triangular-grid]
+    Initial-Person-Attributes = "Gaussian" [setup-person-attributes-gaussian]
   )
 end
 
@@ -347,6 +348,24 @@ to setup-person-attributes-triangular-grid
   setxy (world-width * ((ifelse-value (0 = (int (cur-item / num-cols)) mod 2) [0] [0.5]) + cur-item mod num-cols) / num-cols) (world-height * (int (cur-item / num-cols)) / num-rows)
 end
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+to setup-person-attributes-gaussian
+  let mult 0.25
+  ;let mult 1 / 6
+
+  let x random-normal (mean list min-pxcor max-pxcor) (mult * (-1 + world-width))
+  while [x > max-pxcor or x < min-pxcor] [
+    set x random-normal (mean list min-pxcor max-pxcor) (mult * (-1 + world-width))
+  ]
+
+  let y random-normal (mean list min-pycor max-pycor) (mult * (-1 + world-height))
+  while [y > max-pycor or y < min-pycor] [
+    set y random-normal (mean list min-pycor max-pycor) (mult * (-1 + world-height))
+  ]
+
+  setxy x y
+end
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1592,10 +1611,10 @@ GRAPHICS-WINDOW
 1
 1
 1
--16
-16
--16
-16
+0
+32
+0
+32
 0
 0
 1
@@ -1608,7 +1627,7 @@ INPUTBOX
 167
 150
 Number-Of-People
-196.0
+200.0
 1
 0
 Number
@@ -2401,7 +2420,7 @@ MFI-Network-Radius
 MFI-Network-Radius
 0
 12
-4.0
+3.9597979746446663
 .25
 1
 Patches
@@ -3042,7 +3061,7 @@ CHOOSER
 290
 Initial-Person-Attributes
 Initial-Person-Attributes
-"Random" "4 Clusters" "Square Grid" "Triangular Grid" "Random-Patch"
+"Random" "4 Clusters" "Square Grid" "Triangular Grid" "Random-Patch" "Gaussian"
 0
 
 PLOT
