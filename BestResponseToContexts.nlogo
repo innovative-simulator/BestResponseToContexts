@@ -683,6 +683,7 @@ to choose-action-against [given-opponent]
   set pp-current-c-belief best-c-belief-against given-opponent
   ;set pp-action best-response [cb-degree] of pp-current-c-belief
   set pp-action chosen-action [cb-degree] of pp-current-c-belief
+  if matching-game? [set pp-action 1 - pp-action] ; E.g. Stag Hunt. Hawk-Dove and Mini-Nash Demand are mis-matching games.
   if epsilon > 0 [ ; Chance of exploring alternative actions?
     if epsilon > random-float 100 [
       set pp-action 1 - pp-action
@@ -724,7 +725,9 @@ to update-relevance-against [given-opponent]
 
   ; Remember: HD is a *mis-matching* game! Score 1 for a mis-match, 0 for a match
   ;let relevance-correction 1 ; Effectively what we ran before.
-  let relevance-correction -1 + 2 * abs (pp-action - [pp-action] of given-opponent) ; Move towards those I mis-match, away from those I match.
+  let relevance-correction (
+    -1 + 2 * abs (pp-action - [pp-action] of given-opponent) ; Move towards those I mis-match, away from those I match.
+  ) * ifelse-value matching-game? [-1] [1] ; For matching games (e.g. Stag Hunt) reverse direction.
   ;let relevance-correction 1 + -2 * abs (pp-action - [pp-action] of given-opponent) ; Wrong way! Move towards those I match, away from those I mis-match.
   ;let relevance-correction (-1 + abs (pp-action - [pp-action] of given-opponent)) ; Move away from those I match. (Surprisingly, no dominance emerges)
   ;let relevance-correction ( abs (pp-action - [pp-action] of given-opponent)) ; Move towards those I mis-match. (Faster dominance emergence)
@@ -2307,9 +2310,9 @@ PENS
 
 MONITOR
 15
-830
+835
 167
-875
+880
 Expected Payoff at MSNE
 msne-exp-payoff
 3
@@ -2318,9 +2321,9 @@ msne-exp-payoff
 
 MONITOR
 15
-720
+725
 72
-765
+770
 D vs D
 item 0 payoffs
 3
@@ -2329,9 +2332,9 @@ item 0 payoffs
 
 MONITOR
 75
-720
+725
 132
-765
+770
 D vs H
 item 1 payoffs
 3
@@ -2340,9 +2343,9 @@ item 1 payoffs
 
 MONITOR
 15
-770
+775
 72
-815
+820
 H vs D
 item 2 payoffs
 3
@@ -2351,9 +2354,9 @@ item 2 payoffs
 
 MONITOR
 75
-770
+775
 132
-815
+820
 H vs H
 item 3 payoffs
 3
@@ -2362,9 +2365,9 @@ item 3 payoffs
 
 TEXTBOX
 15
-695
+700
 165
-713
+718
 Payoffs Table:
 14
 0.0
@@ -2372,9 +2375,9 @@ Payoffs Table:
 
 MONITOR
 15
-880
+885
 112
-925
+930
 Payoff to Noise
 noise-payoff
 3
@@ -2579,9 +2582,9 @@ PENS
 
 INPUTBOX
 15
-975
+1075
 167
-1035
+1135
 Seed-Setup
 -1.925572583E9
 1
@@ -2590,9 +2593,9 @@ Number
 
 INPUTBOX
 15
-1040
+1140
 167
-1100
+1200
 Seed-Go
 4.62326508E8
 1
@@ -2601,9 +2604,9 @@ Number
 
 TEXTBOX
 15
-950
+1050
 225
-970
+1070
 Random Number Generation:
 14
 0.0
@@ -2628,9 +2631,9 @@ NIL
 
 BUTTON
 170
-995
+1095
 232
-1028
+1128
 Clear
 set seed-setup 0
 NIL
@@ -2645,9 +2648,9 @@ NIL
 
 BUTTON
 235
-995
+1095
 337
-1028
+1128
 Use Previous
 set seed-setup previous-seed-setup
 NIL
@@ -2662,9 +2665,9 @@ NIL
 
 BUTTON
 170
-1060
+1160
 232
-1093
+1193
 Clear
 set seed-go 0
 NIL
@@ -2679,9 +2682,9 @@ NIL
 
 BUTTON
 235
-1060
+1160
 337
-1093
+1193
 Use Previous
 set seed-go previous-seed-go
 NIL
@@ -2846,9 +2849,9 @@ Color
 
 BUTTON
 15
-1105
+1205
 147
-1138
+1238
 NIL
 setup-demo-seeds
 NIL
@@ -3247,9 +3250,9 @@ HORIZONTAL
 
 CHOOSER
 15
-610
+640
 177
-655
+685
 Response-Choice
 Response-Choice
 "Best" "Stochastic" "MSNE"
@@ -3373,6 +3376,27 @@ NIL
 NIL
 NIL
 NIL
+1
+
+SWITCH
+15
+600
+162
+633
+Matching-Game?
+Matching-Game?
+1
+1
+-1000
+
+TEXTBOX
+15
+970
+210
+1040
+Hawk-Dove is a mis-matching game, i.e. my aim is to play the opposite action to my opponent. An example of a matching game would be Stag Hunt.
+11
+0.0
 1
 
 @#$#@#$#@
@@ -3830,6 +3854,9 @@ NetLogo 6.2.2
     <enumeratedValueSet variable="Base-MSNE">
       <value value="90"/>
     </enumeratedValueSet>
+    <enumeratedValueSet variable="Matching-Game?">
+      <value value="false"/>
+    </enumeratedValueSet>
     <enumeratedValueSet variable="Number-Of-C-Beliefs">
       <value value="4"/>
     </enumeratedValueSet>
@@ -3952,6 +3979,9 @@ NetLogo 6.2.2
     <metric>mean-icb-distance-by-mfi 3</metric>
     <enumeratedValueSet variable="Base-MSNE">
       <value value="90"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Matching-Game?">
+      <value value="false"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="Number-Of-C-Beliefs">
       <value value="1"/>
@@ -4082,6 +4112,9 @@ NetLogo 6.2.2
     <metric>mean-icb-distance-by-mfi 3</metric>
     <enumeratedValueSet variable="Base-MSNE">
       <value value="90"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Matching-Game?">
+      <value value="false"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="Number-Of-C-Beliefs">
       <value value="1"/>
@@ -4224,6 +4257,9 @@ NetLogo 6.2.2
     <metric>mean-icb-distance-by-mfi 2</metric>
     <metric>mean-icb-distance-by-mfi 3</metric>
     <steppedValueSet variable="Base-MSNE" first="0" step="5" last="100"/>
+    <enumeratedValueSet variable="Matching-Game?">
+      <value value="false"/>
+    </enumeratedValueSet>
     <enumeratedValueSet variable="Number-Of-C-Beliefs">
       <value value="4"/>
     </enumeratedValueSet>
@@ -4346,6 +4382,9 @@ NetLogo 6.2.2
     <metric>mean-icb-distance-by-mfi 3</metric>
     <enumeratedValueSet variable="Base-MSNE">
       <value value="90"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Matching-Game?">
+      <value value="false"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="Number-Of-C-Beliefs">
       <value value="4"/>
@@ -4482,6 +4521,9 @@ NetLogo 6.2.2
     <metric>mean-icb-distance-by-mfi 3</metric>
     <enumeratedValueSet variable="Base-MSNE">
       <value value="90"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Matching-Game?">
+      <value value="false"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="Number-Of-C-Beliefs">
       <value value="4"/>
@@ -4627,6 +4669,9 @@ NetLogo 6.2.2
     <enumeratedValueSet variable="Base-MSNE">
       <value value="90"/>
     </enumeratedValueSet>
+    <enumeratedValueSet variable="Matching-Game?">
+      <value value="false"/>
+    </enumeratedValueSet>
     <enumeratedValueSet variable="Number-Of-C-Beliefs">
       <value value="4"/>
     </enumeratedValueSet>
@@ -4760,6 +4805,9 @@ NetLogo 6.2.2
     <metric>mean-icb-distance-by-mfi 3</metric>
     <enumeratedValueSet variable="Base-MSNE">
       <value value="90"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Matching-Game?">
+      <value value="false"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="Number-Of-C-Beliefs">
       <value value="4"/>
@@ -4895,6 +4943,9 @@ NetLogo 6.2.2
     <metric>mean-icb-distance-by-mfi 3</metric>
     <enumeratedValueSet variable="Base-MSNE">
       <value value="90"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Matching-Game?">
+      <value value="false"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="Number-Of-C-Beliefs">
       <value value="1"/>
@@ -5034,6 +5085,9 @@ NetLogo 6.2.2
     <enumeratedValueSet variable="Base-MSNE">
       <value value="90"/>
     </enumeratedValueSet>
+    <enumeratedValueSet variable="Matching-Game?">
+      <value value="false"/>
+    </enumeratedValueSet>
     <enumeratedValueSet variable="Number-Of-C-Beliefs">
       <value value="4"/>
     </enumeratedValueSet>
@@ -5172,6 +5226,9 @@ NetLogo 6.2.2
     <metric>mean-icb-distance-by-mfi 3</metric>
     <enumeratedValueSet variable="Base-MSNE">
       <value value="90"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Matching-Game?">
+      <value value="false"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="Number-Of-C-Beliefs">
       <value value="1"/>
@@ -5321,6 +5378,9 @@ NetLogo 6.2.2
       <value value="70"/>
       <value value="90"/>
     </enumeratedValueSet>
+    <enumeratedValueSet variable="Matching-Game?">
+      <value value="false"/>
+    </enumeratedValueSet>
     <enumeratedValueSet variable="Number-Of-C-Beliefs">
       <value value="4"/>
     </enumeratedValueSet>
@@ -5460,6 +5520,9 @@ NetLogo 6.2.2
       <value value="50"/>
       <value value="70"/>
       <value value="90"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Matching-Game?">
+      <value value="false"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="Number-Of-C-Beliefs">
       <value value="1"/>
@@ -5604,6 +5667,9 @@ NetLogo 6.2.2
     <enumeratedValueSet variable="Base-MSNE">
       <value value="90"/>
       <value value="50"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Matching-Game?">
+      <value value="false"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="Number-Of-C-Beliefs">
       <value value="1"/>
@@ -5752,6 +5818,9 @@ NetLogo 6.2.2
     <enumeratedValueSet variable="Base-MSNE">
       <value value="90"/>
       <value value="50"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Matching-Game?">
+      <value value="false"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="Number-Of-C-Beliefs">
       <value value="1"/>
@@ -5905,6 +5974,9 @@ NetLogo 6.2.2
       <value value="90"/>
       <value value="50"/>
     </enumeratedValueSet>
+    <enumeratedValueSet variable="Matching-Game?">
+      <value value="false"/>
+    </enumeratedValueSet>
     <enumeratedValueSet variable="Number-Of-C-Beliefs">
       <value value="1"/>
       <value value="2"/>
@@ -6055,6 +6127,9 @@ NetLogo 6.2.2
     <metric>mean-icb-distance-by-mfi 2</metric>
     <metric>mean-icb-distance-by-mfi 3</metric>
     <steppedValueSet variable="Base-MSNE" first="0" step="5" last="100"/>
+    <enumeratedValueSet variable="Matching-Game?">
+      <value value="false"/>
+    </enumeratedValueSet>
     <enumeratedValueSet variable="Number-Of-C-Beliefs">
       <value value="2"/>
       <value value="4"/>
@@ -6185,6 +6260,9 @@ NetLogo 6.2.2
     <metric>mean-icb-distance-by-mfi 2</metric>
     <metric>mean-icb-distance-by-mfi 3</metric>
     <steppedValueSet variable="Base-MSNE" first="0" step="5" last="100"/>
+    <enumeratedValueSet variable="Matching-Game?">
+      <value value="false"/>
+    </enumeratedValueSet>
     <enumeratedValueSet variable="Number-Of-C-Beliefs">
       <value value="1"/>
     </enumeratedValueSet>
@@ -6306,6 +6384,9 @@ NetLogo 6.2.2
     <metric>mean-icb-distance-by-mfi 2</metric>
     <metric>mean-icb-distance-by-mfi 3</metric>
     <steppedValueSet variable="Base-MSNE" first="0" step="5" last="100"/>
+    <enumeratedValueSet variable="Matching-Game?">
+      <value value="false"/>
+    </enumeratedValueSet>
     <enumeratedValueSet variable="Number-Of-C-Beliefs">
       <value value="1"/>
     </enumeratedValueSet>
@@ -6434,6 +6515,9 @@ NetLogo 6.2.2
       <value value="70"/>
       <value value="90"/>
       <value value="100"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Matching-Game?">
+      <value value="false"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="Number-Of-C-Beliefs">
       <value value="1"/>
@@ -6583,6 +6667,9 @@ NetLogo 6.2.2
       <value value="90"/>
       <value value="100"/>
     </enumeratedValueSet>
+    <enumeratedValueSet variable="Matching-Game?">
+      <value value="false"/>
+    </enumeratedValueSet>
     <enumeratedValueSet variable="Number-Of-C-Beliefs">
       <value value="1"/>
       <value value="2"/>
@@ -6731,6 +6818,9 @@ NetLogo 6.2.2
     <metric>mean-icb-distance-by-mfi 2</metric>
     <metric>mean-icb-distance-by-mfi 3</metric>
     <steppedValueSet variable="Base-MSNE" first="0" step="5" last="100"/>
+    <enumeratedValueSet variable="Matching-Game?">
+      <value value="false"/>
+    </enumeratedValueSet>
     <enumeratedValueSet variable="Number-Of-C-Beliefs">
       <value value="1"/>
       <value value="2"/>
@@ -6862,6 +6952,9 @@ NetLogo 6.2.2
     <metric>mean-icb-distance-by-mfi 2</metric>
     <metric>mean-icb-distance-by-mfi 3</metric>
     <steppedValueSet variable="Base-MSNE" first="0" step="5" last="100"/>
+    <enumeratedValueSet variable="Matching-Game?">
+      <value value="false"/>
+    </enumeratedValueSet>
     <enumeratedValueSet variable="Number-Of-C-Beliefs">
       <value value="1"/>
       <value value="2"/>
@@ -7010,6 +7103,9 @@ NetLogo 6.2.2
     <metric>mean-icb-distance-by-mfi 2</metric>
     <metric>mean-icb-distance-by-mfi 3</metric>
     <steppedValueSet variable="Base-MSNE" first="0" step="5" last="100"/>
+    <enumeratedValueSet variable="Matching-Game?">
+      <value value="false"/>
+    </enumeratedValueSet>
     <enumeratedValueSet variable="Number-Of-C-Beliefs">
       <value value="1"/>
       <value value="2"/>
@@ -7158,6 +7254,9 @@ NetLogo 6.2.2
     <metric>mean-icb-distance-by-mfi 2</metric>
     <metric>mean-icb-distance-by-mfi 3</metric>
     <steppedValueSet variable="Base-MSNE" first="0" step="5" last="100"/>
+    <enumeratedValueSet variable="Matching-Game?">
+      <value value="false"/>
+    </enumeratedValueSet>
     <enumeratedValueSet variable="Number-Of-C-Beliefs">
       <value value="4"/>
       <value value="8"/>
@@ -7286,6 +7385,9 @@ NetLogo 6.2.2
     <metric>mean-icb-distance-by-mfi 2</metric>
     <metric>mean-icb-distance-by-mfi 3</metric>
     <steppedValueSet variable="Base-MSNE" first="0" step="5" last="100"/>
+    <enumeratedValueSet variable="Matching-Game?">
+      <value value="false"/>
+    </enumeratedValueSet>
     <enumeratedValueSet variable="Number-Of-C-Beliefs">
       <value value="4"/>
       <value value="8"/>
@@ -7418,6 +7520,9 @@ NetLogo 6.2.2
     <metric>mean-icb-distance-by-mfi 2</metric>
     <metric>mean-icb-distance-by-mfi 3</metric>
     <steppedValueSet variable="Base-MSNE" first="0" step="5" last="100"/>
+    <enumeratedValueSet variable="Matching-Game?">
+      <value value="false"/>
+    </enumeratedValueSet>
     <enumeratedValueSet variable="Number-Of-C-Beliefs">
       <value value="2"/>
       <value value="4"/>
@@ -7546,6 +7651,9 @@ NetLogo 6.2.2
     <metric>mean-icb-distance-by-mfi 2</metric>
     <metric>mean-icb-distance-by-mfi 3</metric>
     <steppedValueSet variable="Base-MSNE" first="0" step="5" last="100"/>
+    <enumeratedValueSet variable="Matching-Game?">
+      <value value="false"/>
+    </enumeratedValueSet>
     <enumeratedValueSet variable="Number-Of-C-Beliefs">
       <value value="2"/>
       <value value="4"/>
@@ -7674,6 +7782,9 @@ NetLogo 6.2.2
     <metric>mean-icb-distance-by-mfi 3</metric>
     <enumeratedValueSet variable="Base-MSNE">
       <value value="90"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Matching-Game?">
+      <value value="false"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="Number-Of-C-Beliefs">
       <value value="2"/>
@@ -7815,6 +7926,9 @@ NetLogo 6.2.2
     <enumeratedValueSet variable="Base-MSNE">
       <value value="50"/>
       <value value="90"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Matching-Game?">
+      <value value="false"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="Number-Of-C-Beliefs">
       <value value="2"/>
@@ -7959,6 +8073,9 @@ NetLogo 6.2.2
     <enumeratedValueSet variable="Base-MSNE">
       <value value="90"/>
       <value value="50"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Matching-Game?">
+      <value value="false"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="Number-Of-C-Beliefs">
       <value value="2"/>
@@ -8106,6 +8223,9 @@ NetLogo 6.2.2
       <value value="70"/>
       <value value="90"/>
     </enumeratedValueSet>
+    <enumeratedValueSet variable="Matching-Game?">
+      <value value="false"/>
+    </enumeratedValueSet>
     <enumeratedValueSet variable="Number-Of-C-Beliefs">
       <value value="1"/>
       <value value="2"/>
@@ -8252,6 +8372,9 @@ NetLogo 6.2.2
       <value value="90"/>
       <value value="50"/>
     </enumeratedValueSet>
+    <enumeratedValueSet variable="Matching-Game?">
+      <value value="false"/>
+    </enumeratedValueSet>
     <enumeratedValueSet variable="Number-Of-C-Beliefs">
       <value value="2"/>
       <value value="4"/>
@@ -8391,6 +8514,9 @@ NetLogo 6.2.2
     <enumeratedValueSet variable="Base-MSNE">
       <value value="90"/>
       <value value="50"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Matching-Game?">
+      <value value="false"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="Number-Of-C-Beliefs">
       <value value="1"/>
@@ -8533,6 +8659,9 @@ NetLogo 6.2.2
     <enumeratedValueSet variable="Base-MSNE">
       <value value="75"/>
     </enumeratedValueSet>
+    <enumeratedValueSet variable="Matching-Game?">
+      <value value="false"/>
+    </enumeratedValueSet>
     <enumeratedValueSet variable="Number-Of-C-Beliefs">
       <value value="8"/>
     </enumeratedValueSet>
@@ -8652,6 +8781,9 @@ NetLogo 6.2.2
     <metric>mean-icb-distance-by-mfi 2</metric>
     <metric>mean-icb-distance-by-mfi 3</metric>
     <steppedValueSet variable="Base-MSNE" first="70" step="1" last="80"/>
+    <enumeratedValueSet variable="Matching-Game?">
+      <value value="false"/>
+    </enumeratedValueSet>
     <enumeratedValueSet variable="Number-Of-C-Beliefs">
       <value value="8"/>
     </enumeratedValueSet>
@@ -8772,6 +8904,9 @@ NetLogo 6.2.2
     <metric>mean-icb-distance-by-mfi 3</metric>
     <enumeratedValueSet variable="Base-MSNE">
       <value value="90"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Matching-Game?">
+      <value value="false"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="Number-Of-C-Beliefs">
       <value value="2"/>
@@ -8894,6 +9029,9 @@ NetLogo 6.2.2
     <metric>mean-icb-distance-by-mfi 3</metric>
     <enumeratedValueSet variable="Base-MSNE">
       <value value="90"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Matching-Game?">
+      <value value="false"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="Number-Of-C-Beliefs">
       <value value="1"/>
@@ -9047,6 +9185,9 @@ NetLogo 6.2.2
     <metric>mean-icb-distance-by-mfi 3</metric>
     <enumeratedValueSet variable="Base-MSNE">
       <value value="90"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Matching-Game?">
+      <value value="false"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="Number-Of-C-Beliefs">
       <value value="1"/>
