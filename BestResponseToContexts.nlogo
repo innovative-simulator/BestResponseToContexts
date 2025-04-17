@@ -173,7 +173,7 @@ end
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 to-report payoffs
-  report payoffs-hd
+  report ifelse-value matching-game? [payoffs-sh] [payoffs-hd]
 end
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -190,8 +190,29 @@ end
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 to-report hd-cost-of-conflict
+  ; Using MSNE expectation that opponent plays "Hawk"
   if 0 = base-msne [report infinity]
   report 100 * HD-Value / base-msne
+end
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+to-report payoffs-sh
+  report (list
+    (0.5 * hd-value) ; Share a stag
+    0 ; Left with nothing
+    sh-hare
+    (0.5 * sh-hare) ; If both players share hare equally
+    ;sh-hare ; If both players can catch their own hare
+  )
+end
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+to-report sh-hare
+  ; Using MSNE expectation that opponent plays "Hare"
+  report hd-value * (1 - 100 / (200 - base-msne)) ; If both players share hare equally
+  ;report 0.005 * hd-value * (100 - base-msne) ; If both players can catch their own hare
 end
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -683,7 +704,10 @@ to choose-action-against [given-opponent]
   set pp-current-c-belief best-c-belief-against given-opponent
   ;set pp-action best-response [cb-degree] of pp-current-c-belief
   set pp-action chosen-action [cb-degree] of pp-current-c-belief
-  if matching-game? [set pp-action 1 - pp-action] ; E.g. Stag Hunt. Hawk-Dove and Mini-Nash Demand are mis-matching games.
+  ; HD: 1 = "Hawk", 0 = "Dove"
+  ; SH: 1 = "Hare", 0 = "Stag"
+
+  ; Apply noise?
   if epsilon > 0 [ ; Chance of exploring alternative actions?
     if epsilon > random-float 100 [
       set pp-action 1 - pp-action
@@ -822,10 +846,15 @@ end
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 to-report best-response [given-belief]
+  ; Given belief that opponent will play "1"
+
+  ; Attempt to play mis-matching move,
+  ; depending on threshold set by payoffs structure.
   (ifelse
-    (msne > given-belief) [report 1]
-    (msne < given-belief) [report 0]
+    (msne > given-belief) [report ifelse-value matching-game? [0] [1]]
+    (msne < given-belief) [report ifelse-value matching-game? [1] [0]]
   )
+  ; Play MSNE
   report ifelse-value (msne > random-float 100) [1] [0]
 end
 
@@ -2100,7 +2129,7 @@ MONITOR
 212
 590
 HD Cost of Conflict
-hd-cost-of-conflict
+ifelse-value matching-game? [\"\"] [hd-cost-of-conflict]
 3
 1
 11
@@ -2310,9 +2339,9 @@ PENS
 
 MONITOR
 15
-835
+810
 167
-880
+855
 Expected Payoff at MSNE
 msne-exp-payoff
 3
@@ -2321,9 +2350,9 @@ msne-exp-payoff
 
 MONITOR
 15
-725
+700
 72
-770
+745
 D vs D
 item 0 payoffs
 3
@@ -2332,9 +2361,9 @@ item 0 payoffs
 
 MONITOR
 75
-725
+700
 132
-770
+745
 D vs H
 item 1 payoffs
 3
@@ -2343,9 +2372,9 @@ item 1 payoffs
 
 MONITOR
 15
-775
+750
 72
-820
+795
 H vs D
 item 2 payoffs
 3
@@ -2354,9 +2383,9 @@ item 2 payoffs
 
 MONITOR
 75
-775
+750
 132
-820
+795
 H vs H
 item 3 payoffs
 3
@@ -2365,9 +2394,9 @@ item 3 payoffs
 
 TEXTBOX
 15
-700
+675
 165
-718
+693
 Payoffs Table:
 14
 0.0
@@ -2375,9 +2404,9 @@ Payoffs Table:
 
 MONITOR
 15
-885
+860
 112
-930
+905
 Payoff to Noise
 noise-payoff
 3
@@ -2582,9 +2611,9 @@ PENS
 
 INPUTBOX
 15
-1075
+1095
 167
-1135
+1155
 Seed-Setup
 -1.925572583E9
 1
@@ -2593,9 +2622,9 @@ Number
 
 INPUTBOX
 15
-1140
+1160
 167
-1200
+1220
 Seed-Go
 4.62326508E8
 1
@@ -2604,9 +2633,9 @@ Number
 
 TEXTBOX
 15
-1050
-225
 1070
+225
+1090
 Random Number Generation:
 14
 0.0
@@ -2631,9 +2660,9 @@ NIL
 
 BUTTON
 170
-1095
+1115
 232
-1128
+1148
 Clear
 set seed-setup 0
 NIL
@@ -2648,9 +2677,9 @@ NIL
 
 BUTTON
 235
-1095
+1115
 337
-1128
+1148
 Use Previous
 set seed-setup previous-seed-setup
 NIL
@@ -2665,9 +2694,9 @@ NIL
 
 BUTTON
 170
-1160
+1180
 232
-1193
+1213
 Clear
 set seed-go 0
 NIL
@@ -2682,9 +2711,9 @@ NIL
 
 BUTTON
 235
-1160
+1180
 337
-1193
+1213
 Use Previous
 set seed-go previous-seed-go
 NIL
@@ -2849,9 +2878,9 @@ Color
 
 BUTTON
 15
-1205
+1225
 147
-1238
+1258
 NIL
 setup-demo-seeds
 NIL
@@ -3250,9 +3279,9 @@ HORIZONTAL
 
 CHOOSER
 15
-640
+615
 177
-685
+660
 Response-Choice
 Response-Choice
 "Best" "Stochastic" "MSNE"
@@ -3380,9 +3409,9 @@ NIL
 
 SWITCH
 15
-600
+910
 162
-633
+943
 Matching-Game?
 Matching-Game?
 1
@@ -3391,13 +3420,24 @@ Matching-Game?
 
 TEXTBOX
 15
-970
+945
 210
-1040
+1015
 Hawk-Dove is a mis-matching game, i.e. my aim is to play the opposite action to my opponent. An example of a matching game would be Stag Hunt.
 11
 0.0
 1
+
+MONITOR
+15
+1005
+157
+1050
+SH Value of Whole Hare
+ifelse-value matching-game? [sh-hare] [\"\"]
+2
+1
+11
 
 @#$#@#$#@
 # Play Best Response Given Context-Dependent Beliefs
