@@ -455,7 +455,7 @@ to-report new-c-belief
   hatch-c-beliefs 1 [
     set hidden? Hide-C-Beliefs?
     set rep-obj self
-    set shape "circle"
+    set shape "pentagon"
     set size 0.5
     setxy random-xcor random-ycor
     set cb-degree cb-initial-degree
@@ -527,21 +527,48 @@ end
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 to highlight
-  set size 2
-  foreach sort my-out-c-links [cl ->
-    ask cl [
-      set hidden? false
-      set thickness 0.5
-      set color [color] of end1
-      ask end2 [
-        set hidden? false
-        set size 2 * size
+  ; run as person being highlighted
+  set size 4
+
+  let cur-color color
+
+  foreach sorted-people [
+    pp ->
+    ask pp [
+      set color [cb-degree-color] of [min-one-of (out-c-link-neighbors with-min [distance pp]) [who]] of myself
+      set shape "person"
+
+      foreach sort mfi-link-neighbors with [who < [who] of myself] [
+        alter ->
+        ask [mfi-link-with pp] of alter [
+          set hidden? true
+        ]
       ]
     ]
   ]
+
+  ; Highlighted person retains color
+  set color cur-color
+  set shape item pp-most-freq-interaction interaction-shapes
+
+  (foreach (sort my-out-c-links) (n-values (count my-out-c-links) [k -> k]) [
+    [cl k] ->
+    ask cl [
+      ;set hidden? false
+      ;set thickness 0.5
+;      set color [color] of end1
+;      set color [color] of end1
+      ask end2 [
+        set hidden? false
+        set size 4 * size
+        set color (item (1 + ((2 * k) mod 13)) base-colors) - 1 - int (k / 13)
+        set label (word (precision cb-degree 0) "  ")
+      ]
+    ]
+  ])
   foreach sort patches [pa ->
     ask pa [
-      set pcolor [color] of [min-one-of (out-c-link-neighbors with-min [distance pa]) [who]] of myself
+      set pcolor 5 + [color] of [min-one-of (out-c-link-neighbors with-min [distance pa]) [who]] of myself
     ]
   ]
 end
@@ -551,13 +578,29 @@ end
 to unhighlight
   set size 1
   set label ""
+
+  recolor-people
+  foreach sorted-people [
+    pp ->
+    ask pp [
+      foreach sort mfi-link-neighbors with [who < [who] of myself] [
+        alter ->
+        ask [mfi-link-with pp] of alter [
+          set hidden? hide-mfi-links?
+        ]
+      ]
+    ]
+  ]
+
   foreach sort my-out-c-links [cl ->
     ask cl [
-      set hidden? true
+      set hidden? Hide-C-Links?
       set thickness 0
-      ask end2 [
-        set hidden? true
-        set size 0.5 * size
+      ask end2 [ ; C-Belief
+        set hidden? Hide-C-Beliefs?
+        set size 0.25 * size
+        set color cb-degree-color
+        set label ""
       ]
     ]
   ]
@@ -588,7 +631,16 @@ to go
   let pairs shuffle sorted-people
   set pairs (list
     sublist pairs 0 (int (0.5 * length pairs))
-    sublist pairs (int (0.5 * length pairs)) ((length pairs) + ifelse-value (0 = (length pairs) mod 2) [0] [-1])
+    (ifelse-value
+      (Social-Network = "Complete") [
+        sublist pairs (int (0.5 * length pairs)) ((length pairs) + ifelse-value (0 = (length pairs) mod 2) [0] [-1])
+      ]
+      (Social-Network = "Radius") [
+        ; NB: Not currently testing for whether 0 = count other people in-radius!
+        ; NB: Some people will by chance receive more interaction experiences than others, and therefore learn quicker.
+        map [ego -> [one-of other (people in-radius neighborhood-radius)] of ego] sublist pairs 0 (int (0.5 * length pairs))
+      ]
+    )
   )
 
   (foreach (first pairs) (last pairs) [[ego alter] ->
@@ -899,14 +951,20 @@ end
 
 to c-beliefs-recolor-by-belief
   ;set color (color mod 10) + 0.1 * cb-degree
-  (ifelse
-    (cb-degree > msne + MSNE-Margin) [set color Hawk-Color]
-    (cb-degree < msne - MSNE-Margin) [set color Dove-Color]
-    [set color MSNE-Color]
-  )
+  set color cb-degree-color
   ask my-in-c-links [set color [color] of end1]
   ;ask my-c-links [set color [color] of myself]
   ;set color (color mod 10) + 0.1 * mean [cb-degree] of out-c-link-neighbors
+end
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+to-report cb-degree-color
+  report (ifelse-value
+    (cb-degree > msne + MSNE-Margin) [Hawk-Color]
+    (cb-degree < msne - MSNE-Margin) [Dove-Color]
+    [MSNE-Color]
+  )
 end
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1749,7 +1807,7 @@ INPUTBOX
 357
 680
 Run-Length
-2000.0
+200000.0
 1
 0
 Number
@@ -1893,7 +1951,7 @@ INPUTBOX
 1562
 530
 Hawk-Color
-4.0
+3.0
 1
 0
 Color
@@ -1904,7 +1962,7 @@ INPUTBOX
 1562
 650
 Dove-Color
-9.0
+7.0
 1
 0
 Color
@@ -1915,7 +1973,7 @@ INPUTBOX
 1562
 590
 MSNE-Color
-6.0
+5.0
 1
 0
 Color
@@ -2599,7 +2657,7 @@ Ticks
 0.0
 1.0
 0.0
-1.0
+100.0
 true
 true
 "" ""
@@ -2611,9 +2669,9 @@ PENS
 
 INPUTBOX
 15
-1095
+1225
 167
-1155
+1285
 Seed-Setup
 -1.925572583E9
 1
@@ -2622,9 +2680,9 @@ Number
 
 INPUTBOX
 15
-1160
+1290
 167
-1220
+1350
 Seed-Go
 4.62326508E8
 1
@@ -2633,9 +2691,9 @@ Number
 
 TEXTBOX
 15
-1070
+1200
 225
-1090
+1220
 Random Number Generation:
 14
 0.0
@@ -2660,9 +2718,9 @@ NIL
 
 BUTTON
 170
-1115
+1245
 232
-1148
+1278
 Clear
 set seed-setup 0
 NIL
@@ -2677,9 +2735,9 @@ NIL
 
 BUTTON
 235
-1115
+1245
 337
-1148
+1278
 Use Previous
 set seed-setup previous-seed-setup
 NIL
@@ -2694,9 +2752,9 @@ NIL
 
 BUTTON
 170
-1180
+1310
 232
-1213
+1343
 Clear
 set seed-go 0
 NIL
@@ -2711,9 +2769,9 @@ NIL
 
 BUTTON
 235
-1180
+1310
 337
-1213
+1343
 Use Previous
 set seed-go previous-seed-go
 NIL
@@ -2878,9 +2936,9 @@ Color
 
 BUTTON
 15
-1225
+1355
 147
-1258
+1388
 NIL
 setup-demo-seeds
 NIL
@@ -3439,6 +3497,52 @@ ifelse-value matching-game? [sh-hare] [\"\"]
 1
 11
 
+SLIDER
+15
+1145
+205
+1178
+Neighborhood-Radius
+Neighborhood-Radius
+0
+0.5 * 1.42 * world-width
+4.0
+1
+1
+Patches
+HORIZONTAL
+
+MONITOR
+210
+1135
+332
+1180
+Expected Neighbors
+pi * number-of-people * (neighborhood-radius ^ 2) / (count patches)
+1
+1
+11
+
+CHOOSER
+15
+1085
+153
+1130
+Social-Network
+Social-Network
+"Complete" "Radius"
+0
+
+TEXTBOX
+15
+1065
+165
+1083
+Social Network:
+14
+0.0
+1
+
 @#$#@#$#@
 # Play Best Response Given Context-Dependent Beliefs
 ## WHAT IS IT?
@@ -3930,6 +4034,12 @@ NetLogo 6.2.2
     <enumeratedValueSet variable="Statistics-Retention">
       <value value="90"/>
     </enumeratedValueSet>
+    <enumeratedValueSet variable="Social-Network">
+      <value value="&quot;Complete&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Neighborhood-Radius">
+      <value value="8"/>
+    </enumeratedValueSet>
     <enumeratedValueSet variable="Run-Length">
       <value value="2000"/>
     </enumeratedValueSet>
@@ -4062,6 +4172,12 @@ NetLogo 6.2.2
     </enumeratedValueSet>
     <enumeratedValueSet variable="Statistics-Retention">
       <value value="90"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Social-Network">
+      <value value="&quot;Complete&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Neighborhood-Radius">
+      <value value="8"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="Run-Length">
       <value value="2000"/>
@@ -4209,6 +4325,12 @@ NetLogo 6.2.2
     <enumeratedValueSet variable="Statistics-Retention">
       <value value="90"/>
     </enumeratedValueSet>
+    <enumeratedValueSet variable="Social-Network">
+      <value value="&quot;Complete&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Neighborhood-Radius">
+      <value value="8"/>
+    </enumeratedValueSet>
     <enumeratedValueSet variable="Run-Length">
       <value value="2000"/>
     </enumeratedValueSet>
@@ -4332,6 +4454,12 @@ NetLogo 6.2.2
     </enumeratedValueSet>
     <enumeratedValueSet variable="Statistics-Retention">
       <value value="90"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Social-Network">
+      <value value="&quot;Complete&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Neighborhood-Radius">
+      <value value="8"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="Run-Length">
       <value value="2000"/>
@@ -4471,6 +4599,12 @@ NetLogo 6.2.2
     </enumeratedValueSet>
     <enumeratedValueSet variable="Statistics-Retention">
       <value value="90"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Social-Network">
+      <value value="&quot;Complete&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Neighborhood-Radius">
+      <value value="8"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="Run-Length">
       <value value="2000"/>
@@ -4619,6 +4753,12 @@ NetLogo 6.2.2
     <enumeratedValueSet variable="Statistics-Retention">
       <value value="90"/>
     </enumeratedValueSet>
+    <enumeratedValueSet variable="Social-Network">
+      <value value="&quot;Complete&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Neighborhood-Radius">
+      <value value="8"/>
+    </enumeratedValueSet>
     <enumeratedValueSet variable="Run-Length">
       <value value="20000"/>
     </enumeratedValueSet>
@@ -4756,6 +4896,12 @@ NetLogo 6.2.2
     <enumeratedValueSet variable="Statistics-Retention">
       <value value="90"/>
     </enumeratedValueSet>
+    <enumeratedValueSet variable="Social-Network">
+      <value value="&quot;Complete&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Neighborhood-Radius">
+      <value value="8"/>
+    </enumeratedValueSet>
     <enumeratedValueSet variable="Run-Length">
       <value value="2000"/>
     </enumeratedValueSet>
@@ -4892,6 +5038,12 @@ NetLogo 6.2.2
     </enumeratedValueSet>
     <enumeratedValueSet variable="Statistics-Retention">
       <value value="90"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Social-Network">
+      <value value="&quot;Complete&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Neighborhood-Radius">
+      <value value="8"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="Run-Length">
       <value value="2000"/>
@@ -5035,6 +5187,12 @@ NetLogo 6.2.2
     <enumeratedValueSet variable="Statistics-Retention">
       <value value="90"/>
     </enumeratedValueSet>
+    <enumeratedValueSet variable="Social-Network">
+      <value value="&quot;Complete&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Neighborhood-Radius">
+      <value value="8"/>
+    </enumeratedValueSet>
     <enumeratedValueSet variable="Run-Length">
       <value value="4000"/>
     </enumeratedValueSet>
@@ -5176,6 +5334,12 @@ NetLogo 6.2.2
     </enumeratedValueSet>
     <enumeratedValueSet variable="Statistics-Retention">
       <value value="90"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Social-Network">
+      <value value="&quot;Complete&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Neighborhood-Radius">
+      <value value="8"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="Run-Length">
       <value value="2000"/>
@@ -5324,6 +5488,12 @@ NetLogo 6.2.2
     <enumeratedValueSet variable="Statistics-Retention">
       <value value="90"/>
     </enumeratedValueSet>
+    <enumeratedValueSet variable="Social-Network">
+      <value value="&quot;Complete&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Neighborhood-Radius">
+      <value value="8"/>
+    </enumeratedValueSet>
     <enumeratedValueSet variable="Run-Length">
       <value value="2000"/>
     </enumeratedValueSet>
@@ -5466,6 +5636,12 @@ NetLogo 6.2.2
     </enumeratedValueSet>
     <enumeratedValueSet variable="Statistics-Retention">
       <value value="90"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Social-Network">
+      <value value="&quot;Complete&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Neighborhood-Radius">
+      <value value="8"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="Run-Length">
       <value value="2000"/>
@@ -5617,6 +5793,12 @@ NetLogo 6.2.2
     <enumeratedValueSet variable="Statistics-Retention">
       <value value="90"/>
     </enumeratedValueSet>
+    <enumeratedValueSet variable="Social-Network">
+      <value value="&quot;Complete&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Neighborhood-Radius">
+      <value value="8"/>
+    </enumeratedValueSet>
     <enumeratedValueSet variable="Run-Length">
       <value value="2000"/>
     </enumeratedValueSet>
@@ -5767,6 +5949,12 @@ NetLogo 6.2.2
     </enumeratedValueSet>
     <enumeratedValueSet variable="Statistics-Retention">
       <value value="90"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Social-Network">
+      <value value="&quot;Complete&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Neighborhood-Radius">
+      <value value="8"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="Run-Length">
       <value value="2000"/>
@@ -5922,6 +6110,12 @@ NetLogo 6.2.2
     </enumeratedValueSet>
     <enumeratedValueSet variable="Statistics-Retention">
       <value value="90"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Social-Network">
+      <value value="&quot;Complete&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Neighborhood-Radius">
+      <value value="8"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="Run-Length">
       <value value="2000"/>
@@ -6079,6 +6273,12 @@ NetLogo 6.2.2
     <enumeratedValueSet variable="Statistics-Retention">
       <value value="90"/>
     </enumeratedValueSet>
+    <enumeratedValueSet variable="Social-Network">
+      <value value="&quot;Complete&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Neighborhood-Radius">
+      <value value="8"/>
+    </enumeratedValueSet>
     <enumeratedValueSet variable="Run-Length">
       <value value="2000"/>
     </enumeratedValueSet>
@@ -6212,6 +6412,12 @@ NetLogo 6.2.2
     <enumeratedValueSet variable="Statistics-Retention">
       <value value="90"/>
     </enumeratedValueSet>
+    <enumeratedValueSet variable="Social-Network">
+      <value value="&quot;Complete&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Neighborhood-Radius">
+      <value value="8"/>
+    </enumeratedValueSet>
     <enumeratedValueSet variable="Run-Length">
       <value value="2000"/>
     </enumeratedValueSet>
@@ -6336,6 +6542,12 @@ NetLogo 6.2.2
     <enumeratedValueSet variable="Statistics-Retention">
       <value value="0"/>
     </enumeratedValueSet>
+    <enumeratedValueSet variable="Social-Network">
+      <value value="&quot;Complete&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Neighborhood-Radius">
+      <value value="8"/>
+    </enumeratedValueSet>
     <enumeratedValueSet variable="Run-Length">
       <value value="2000"/>
     </enumeratedValueSet>
@@ -6459,6 +6671,12 @@ NetLogo 6.2.2
     </enumeratedValueSet>
     <enumeratedValueSet variable="Statistics-Retention">
       <value value="90"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Social-Network">
+      <value value="&quot;Complete&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Neighborhood-Radius">
+      <value value="8"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="Run-Length">
       <value value="2000"/>
@@ -6613,6 +6831,12 @@ NetLogo 6.2.2
     </enumeratedValueSet>
     <enumeratedValueSet variable="Statistics-Retention">
       <value value="90"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Social-Network">
+      <value value="&quot;Complete&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Neighborhood-Radius">
+      <value value="8"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="Run-Length">
       <value value="2000"/>
@@ -6770,6 +6994,12 @@ NetLogo 6.2.2
     <enumeratedValueSet variable="Statistics-Retention">
       <value value="90"/>
     </enumeratedValueSet>
+    <enumeratedValueSet variable="Social-Network">
+      <value value="&quot;Complete&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Neighborhood-Radius">
+      <value value="8"/>
+    </enumeratedValueSet>
     <enumeratedValueSet variable="Run-Length">
       <value value="2000"/>
     </enumeratedValueSet>
@@ -6903,6 +7133,12 @@ NetLogo 6.2.2
     </enumeratedValueSet>
     <enumeratedValueSet variable="Statistics-Retention">
       <value value="90"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Social-Network">
+      <value value="&quot;Complete&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Neighborhood-Radius">
+      <value value="8"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="Run-Length">
       <value value="2000"/>
@@ -7055,6 +7291,12 @@ NetLogo 6.2.2
     <enumeratedValueSet variable="Statistics-Retention">
       <value value="90"/>
     </enumeratedValueSet>
+    <enumeratedValueSet variable="Social-Network">
+      <value value="&quot;Complete&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Neighborhood-Radius">
+      <value value="8"/>
+    </enumeratedValueSet>
     <enumeratedValueSet variable="Run-Length">
       <value value="2000"/>
     </enumeratedValueSet>
@@ -7206,6 +7448,12 @@ NetLogo 6.2.2
     <enumeratedValueSet variable="Statistics-Retention">
       <value value="90"/>
     </enumeratedValueSet>
+    <enumeratedValueSet variable="Social-Network">
+      <value value="&quot;Complete&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Neighborhood-Radius">
+      <value value="8"/>
+    </enumeratedValueSet>
     <enumeratedValueSet variable="Run-Length">
       <value value="2000"/>
     </enumeratedValueSet>
@@ -7336,6 +7584,12 @@ NetLogo 6.2.2
     </enumeratedValueSet>
     <enumeratedValueSet variable="Statistics-Retention">
       <value value="90"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Social-Network">
+      <value value="&quot;Complete&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Neighborhood-Radius">
+      <value value="8"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="Run-Length">
       <value value="2000"/>
@@ -7472,6 +7726,12 @@ NetLogo 6.2.2
     <enumeratedValueSet variable="Statistics-Retention">
       <value value="90"/>
     </enumeratedValueSet>
+    <enumeratedValueSet variable="Social-Network">
+      <value value="&quot;Complete&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Neighborhood-Radius">
+      <value value="8"/>
+    </enumeratedValueSet>
     <enumeratedValueSet variable="Run-Length">
       <value value="2000"/>
     </enumeratedValueSet>
@@ -7603,6 +7863,12 @@ NetLogo 6.2.2
     <enumeratedValueSet variable="Statistics-Retention">
       <value value="90"/>
     </enumeratedValueSet>
+    <enumeratedValueSet variable="Social-Network">
+      <value value="&quot;Complete&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Neighborhood-Radius">
+      <value value="8"/>
+    </enumeratedValueSet>
     <enumeratedValueSet variable="Run-Length">
       <value value="2000"/>
     </enumeratedValueSet>
@@ -7732,6 +7998,12 @@ NetLogo 6.2.2
     </enumeratedValueSet>
     <enumeratedValueSet variable="Statistics-Retention">
       <value value="90"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Social-Network">
+      <value value="&quot;Complete&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Neighborhood-Radius">
+      <value value="8"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="Run-Length">
       <value value="2000"/>
@@ -7875,6 +8147,12 @@ NetLogo 6.2.2
     </enumeratedValueSet>
     <enumeratedValueSet variable="Statistics-Retention">
       <value value="90"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Social-Network">
+      <value value="&quot;Complete&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Neighborhood-Radius">
+      <value value="8"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="Run-Length">
       <value value="2000"/>
@@ -8023,6 +8301,12 @@ NetLogo 6.2.2
     <enumeratedValueSet variable="Statistics-Retention">
       <value value="90"/>
     </enumeratedValueSet>
+    <enumeratedValueSet variable="Social-Network">
+      <value value="&quot;Complete&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Neighborhood-Radius">
+      <value value="8"/>
+    </enumeratedValueSet>
     <enumeratedValueSet variable="Run-Length">
       <value value="2000"/>
     </enumeratedValueSet>
@@ -8168,6 +8452,12 @@ NetLogo 6.2.2
     </enumeratedValueSet>
     <enumeratedValueSet variable="Statistics-Retention">
       <value value="90"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Social-Network">
+      <value value="&quot;Complete&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Neighborhood-Radius">
+      <value value="8"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="Run-Length">
       <value value="2000"/>
@@ -8321,6 +8611,12 @@ NetLogo 6.2.2
     <enumeratedValueSet variable="Statistics-Retention">
       <value value="90"/>
     </enumeratedValueSet>
+    <enumeratedValueSet variable="Social-Network">
+      <value value="&quot;Complete&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Neighborhood-Radius">
+      <value value="8"/>
+    </enumeratedValueSet>
     <enumeratedValueSet variable="Run-Length">
       <value value="2000"/>
     </enumeratedValueSet>
@@ -8463,6 +8759,12 @@ NetLogo 6.2.2
     </enumeratedValueSet>
     <enumeratedValueSet variable="Statistics-Retention">
       <value value="90"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Social-Network">
+      <value value="&quot;Complete&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Neighborhood-Radius">
+      <value value="8"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="Run-Length">
       <value value="2000"/>
@@ -8609,6 +8911,12 @@ NetLogo 6.2.2
     <enumeratedValueSet variable="Statistics-Retention">
       <value value="90"/>
     </enumeratedValueSet>
+    <enumeratedValueSet variable="Social-Network">
+      <value value="&quot;Complete&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Neighborhood-Radius">
+      <value value="8"/>
+    </enumeratedValueSet>
     <enumeratedValueSet variable="Run-Length">
       <value value="2000"/>
     </enumeratedValueSet>
@@ -8733,6 +9041,12 @@ NetLogo 6.2.2
     <enumeratedValueSet variable="Statistics-Retention">
       <value value="90"/>
     </enumeratedValueSet>
+    <enumeratedValueSet variable="Social-Network">
+      <value value="&quot;Complete&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Neighborhood-Radius">
+      <value value="8"/>
+    </enumeratedValueSet>
     <enumeratedValueSet variable="Run-Length">
       <value value="2000"/>
     </enumeratedValueSet>
@@ -8854,6 +9168,12 @@ NetLogo 6.2.2
     </enumeratedValueSet>
     <enumeratedValueSet variable="Statistics-Retention">
       <value value="90"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Social-Network">
+      <value value="&quot;Complete&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Neighborhood-Radius">
+      <value value="8"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="Run-Length">
       <value value="2000"/>
@@ -8979,6 +9299,12 @@ NetLogo 6.2.2
     </enumeratedValueSet>
     <enumeratedValueSet variable="Statistics-Retention">
       <value value="90"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Social-Network">
+      <value value="&quot;Complete&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Neighborhood-Radius">
+      <value value="8"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="Run-Length">
       <value value="2000"/>
@@ -9136,6 +9462,12 @@ NetLogo 6.2.2
     <enumeratedValueSet variable="Statistics-Retention">
       <value value="90"/>
     </enumeratedValueSet>
+    <enumeratedValueSet variable="Social-Network">
+      <value value="&quot;Complete&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Neighborhood-Radius">
+      <value value="8"/>
+    </enumeratedValueSet>
     <enumeratedValueSet variable="Run-Length">
       <value value="20000"/>
     </enumeratedValueSet>
@@ -9277,6 +9609,12 @@ NetLogo 6.2.2
     </enumeratedValueSet>
     <enumeratedValueSet variable="Statistics-Retention">
       <value value="90"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Social-Network">
+      <value value="&quot;Complete&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Neighborhood-Radius">
+      <value value="8"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="Run-Length">
       <value value="10000"/>
