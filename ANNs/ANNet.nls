@@ -1,0 +1,572 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; Generic code for an artificial neural networks (ANN)
+; including an-nodes, an-links,
+; activation, and backpropagation.
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+globals [
+  activations
+  backpropagations
+  ;recolor-an-nodes? ; If you don't have it as a switch on the interface
+]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+breed [an-nodes an-node]
+directed-link-breed [an-links an-link]
+directed-link-breed [an-ties an-tie] ; Ties end1's input node (end2) to end1
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+an-nodes-own [
+  ann-type-id ; See the procedure with the list
+  ann-owner
+  ann-activation
+  ann-sorted-in-an-links
+  ann-sorted-out-an-links
+  ann-delta-z
+  
+  ; Values stored for debugging purposes.
+  ; Comment out when no longer needed.
+  ann-last-z
+  ann-last-delta-activation
+]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+an-links-own [
+  anl-adapts?
+  anl-weight
+;  anl-delta-weight
+;  anl-delta-input
+
+  ; Values stored for debugging purposes.
+  ; Comment out when no longer needed.
+  anl-last-delta-weight
+
+]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+to setup-annet
+  set activations table:from-list activation-procedures-list
+  set backpropagations table:from-list backpropagation-procedures-list
+end
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+to-report new-an-node [given-type-id]
+  ; Run by owner of an-node
+  let rep-obj nobody
+  hatch-an-nodes 1 [
+    set rep-obj self
+    set hidden? hide-ann?
+    set ann-owner myself
+    set ann-type-id given-type-id
+    set shape "circle"
+    set size 0.5
+    set label-color ifelse-value (5 > patch-color mod 10) [white] [black]
+    set ann-sorted-in-an-links []
+    set ann-sorted-out-an-links []
+    set ann-activation 1 ; If not a bias node, will be updated before used.
+    set color [5 + 10 * (int (color / 10))] of myself ;scale-color color ann-activation -0.2 1.2
+  ]
+  report rep-obj
+end
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+to-report new-an-link-from [from-node initial-weight weight-adapts?]
+  let rep-obj nobody
+  create-an-link-from from-node [
+    set rep-obj self
+    set hidden? hide-ann?
+    set shape "an-link"
+    set anl-weight initial-weight
+    set anl-adapts? weight-adapts?
+    ask end1 [set ann-sorted-out-an-links fput myself ann-sorted-out-an-links]
+
+    ask end2 [create-an-tie-to [end1] of myself [ set hidden? true ]]
+    ;show initial-weight
+  ]
+  report rep-obj
+end
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+to-report anl-tie
+  ; run as an-link
+  ; For every an-link there is a an-tie going in the opposite direction
+  report [out-an-tie-to [end1] of myself] of end2
+end
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+to-report new-weighted-in-an-links-from [list-of-an-nodes list-of-weights weights-adapts?]
+  ; run as end2 an-node
+  report (
+    map [
+      [ann w] ->
+      new-an-link-from ann w weights-adapts?
+    ]
+    list-of-an-nodes
+    list-of-weights
+  )
+end
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+to add-an-links [list-of-from-nodes list-of-to-nodes initial-weight]
+  foreach list-of-from-nodes [ego ->
+    foreach list-of-to-nodes [alter ->
+      ask ego [
+        create-an-link-to alter [
+          set anl-weight initial-weight
+        ]
+      ]
+    ]
+  ]
+end
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+to-report sigmoid [z]
+  ; The Logistic function
+  report 1.0 / (1.0 + exp (- z))
+end
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+to-report log-odds [p]
+  ; Inverse of sigmoid (the logistic function)
+  report ln (p / (1.0 - p))
+end
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+to-report ann-random-bernoulli
+  report ifelse-value (ann-activation > random-float 1.0) [1] [0]
+end
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+to-report node-type-input
+  report "input"
+end
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+to-report node-type-bias
+  report "bias"
+end
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+to-report node-type-sigmoid
+  report "sigmoid"
+end
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+to-report node-type-sigmoid-output
+  report "sigmoid-output"
+end
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+to-report node-type-softmax
+  report "softmax"
+end
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+to-report node-type-softmax-output
+  report "softmax-output"
+end
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+to-report node-type-square
+  report "square"
+end
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;to-report activations
+;  report table:from-list activation-procedures-list
+;end
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+to-report activation-procedures-list
+  report (list
+    (list node-type-sigmoid [ann-list -> activate-layer-sigmoid ann-list])
+    (list node-type-softmax [ann-list -> activate-layer-softmax ann-list ])
+    (list node-type-square [ann-list -> activate-layer-square ann-list])
+    (list node-type-input [ann-list -> ])
+    (list node-type-bias [ann-list -> ])
+    (list node-type-softmax-output [ann-list -> activate-layer-softmax ann-list ])
+    (list node-type-sigmoid-output [ann-list -> activate-layer-sigmoid ann-list ])
+  )
+end
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;to-report backpropagations
+;  report table:from-list backpropagation-procedures-list
+;end
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;to-report backpropagations
+;  report table:from-list (list
+to-report backpropagation-procedures-list
+  report (list
+    (list node-type-sigmoid [ann-list -> backpropagate-layer-sigmoid ann-list])
+    (list node-type-softmax [ann-list -> backpropagate-layer-sigmoid ann-list])
+    (list node-type-square [ann-list -> backpropagate-layer-square ann-list])
+    (list node-type-input [ann-list -> ])
+    (list node-type-bias [ann-list -> ])
+    (list node-type-softmax-output [[ann-list target-values] -> backpropagate-layer-softmax-output ann-list target-values])
+    (list node-type-sigmoid-output [[ann-list target-values] -> backpropagate-layer-sigmoid-output ann-list target-values])
+  )
+end
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+to activate-net [given-net given-input-values]
+  ; Layer 0 are input nodes
+  (foreach (first first given-net) given-input-values [
+    [ann inp-val] ->
+    ask ann [set ann-activation inp-val]
+  ])
+
+  ; All other layers come with their own activation functions
+  foreach but-first given-net [
+    lay ->
+    ; Layer is a list with following structure:
+    ; item 0: list of nodes
+    ; item 1: name (key) of activation procedure
+    (run (table:get activations (item 1 lay)) (first lay))
+  ]
+end
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+to backpropagate-net [given-reverse-net given-target-values]
+  ; Backpropagate errors, given target values, starting at output layer,
+  ; and working back.
+  
+  ;foreach given-reverse-net [lay -> show lay]
+  
+  ; Layer 0 are compared with target values
+  let output-lay first given-reverse-net
+  (run (table:get backpropagations (item 1 output-lay)) (first output-lay) given-target-values)
+
+  ; All other layers come with their own activation functions
+  foreach but-first given-reverse-net [
+    lay ->
+    ; Layer is a list with following structure:
+    ; item 0: list of nodes
+    ; item 1: name (key) of backpropagation procedure
+    ; item 2: learning rate
+    ; item 3: weight penalty
+    (run (table:get backpropagations (item 1 lay)) (first lay))
+  ]
+end
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+to activate-layer-sigmoid [list-of-anns]
+  foreach list-of-anns [
+    ann ->
+    ask ann [
+      if not empty? ann-sorted-in-an-links [ ; If neither an input node, nor a bias node.
+        set ann-activation sigmoid ann-sum-of-weighted-inputs
+        
+        if member? ann-activation [0 1] [show (word ann-type-id " : " ann-owner " : y = " ann-activation ", z = " ann-sum-of-weighted-inputs)]
+        
+        if recolor-an-nodes? [set color scale-color color ann-activation 1.2 -0.2]
+      ]
+    ]
+  ]
+end
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+to activate-layer-square [list-of-anns]
+  foreach list-of-anns [
+    ann ->
+    ask ann [
+      if not empty? ann-sorted-in-an-links [
+        set ann-activation ann-sum-of-weighted-inputs ^ 2
+        if recolor-an-nodes? [set color scale-color color ann-activation 1.2 -0.2]
+      ]
+    ]
+  ]
+end
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+to activate-layer-softmax [list-of-anns]
+  if empty? list-of-anns [stop]
+
+  let softmax-vals softmax map [ann -> [exp ann-sum-of-weighted-inputs] of ann] list-of-anns
+  let denom 1.0 / sum softmax-vals
+
+  (foreach list-of-anns softmax-vals [
+    [ann val] ->
+    ask ann [
+      if not empty? ann-sorted-in-an-links [
+        set ann-activation val * denom
+        if recolor-an-nodes? [set color scale-color color ann-activation 1.2 -0.2]
+      ]
+    ]
+  ])
+end
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;
+;to update-softmax-deltas-and-weights [list-of-anns]
+;  ; For softmax, must update whole layer of nodes
+;  let delta-ys map [ann ->
+;    [sum map [anl -> [anl-delta-input] of anl] ann-sorted-out-an-links] of ann ; delta-y = delta E / delta y_j
+;  ] list-of-anns
+;  let delta-zs (map [[ann delta-y] ->
+;    [ann-activation * (1.0 - ann-activation) * delta-y] of ann ; delta-z = delta E / delta z_j
+;  ] list-of-anns delta-ys)
+;
+;  (foreach list-of-anns delta-zs [
+;    [ann delta-z] ->
+;    ask ann [
+;      foreach ann-sorted-in-an-links [anl ->
+;        ask anl [
+;          set anl-delta-weight delta-z * ([ann-activation] of end1) ; delta E / delta w_ij
+;          set anl-delta-input anl-weight * delta-z ; Contribution to delta E / delta y_i
+;        ]
+;      ]
+;    ]
+;  ])
+;end
+;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+to-report ann-sum-of-weighted-inputs
+  set ann-last-z 
+  ;report 
+  sum map [anl -> [anl-weight * [ann-activation] of end1] of anl] ann-sorted-in-an-links
+  
+  report ann-last-z 
+end
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+to-report softmax [list-of-values]
+  let exp-list map [x -> exp x] list-of-values
+  if empty? exp-list [report []]
+  let mult sum exp-list
+  if mult = 0 [
+    report n-values (length list-of-values) [-> 1 / length list-of-values] ; Equal probability
+  ]
+  set mult 1.0 / mult
+  report map [x -> x * mult] exp-list
+
+end
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+to-report ann-cost [given-target]
+  report (ann-cross-entropy given-target) + 0.01 * lambda * ann-total-squared-input-weights
+end
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+to-report ann-cross-entropy [given-target]
+  ; H(p, q) = -Ep(log q), where Ep(x) is the expected value of x with respect to probability distribution p.
+  ; Here: p is target distribution; q is activation
+  
+;  ; In nats
+;  report (- (
+;    given-target * (ln ann-activation) +
+;    (1.0 - given-target) * (ln (1.0 - ann-activation))
+;  ))
+
+  ; In bits
+  report (- (
+    given-target * (log ann-activation 2) +
+    (1.0 - given-target) * (log (1.0 - ann-activation) 2)
+  ))
+
+end
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+to-report ann-total-squared-input-weights
+  report 0.5 * sum map [anl -> ([anl-weight] of anl) ^ 2] ann-sorted-in-an-links
+end
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+to-report ann-d-cross-entropy [given-target]
+  ; dC/dy, where C is cross-entropy cost function, and y is activation
+;  if 0 = ann-activation [report 0]
+;  if 1 = ann-activation [report 0]
+  
+  ; nats
+  report ((
+    (- given-target / ann-activation) +
+    ((1.0 - given-target) / (1.0 - ann-activation))
+  ))
+
+;  ; bits
+;  report ((
+;    (- given-target / ann-activation) +
+;    ((1.0 - given-target) / (1.0 - ann-activation))
+;  )) / ln-2
+end
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+to-report ln-2
+  report ln 2
+end
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+to backpropagate-layer-sigmoid [ list-of-nodes ]
+  foreach list-of-nodes [
+    ann ->
+    ask ann [
+      set ann-last-delta-activation ann-new-delta-activation
+      set ann-delta-z ann-new-delta-z-sigmoid ann-last-delta-activation
+      ;set ann-delta-z ann-new-delta-z-sigmoid ann-new-delta-activation
+    ]
+  ]
+end
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+to backpropagate-layer-sigmoid-output [ list-of-nodes target-values ]
+  (foreach list-of-nodes target-values [
+    [ann targ-val] ->
+    ask ann [
+      set ann-last-delta-activation ann-d-cross-entropy targ-val
+      set ann-delta-z ann-new-delta-z-sigmoid ann-last-delta-activation
+      ;set ann-delta-z ann-new-delta-z-sigmoid ann-d-cross-entropy targ-val
+    ]
+  ])
+end
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+to backpropagate-layer-softmax-output [ list-of-nodes target-values]
+  ; To be used if softmax is output layer
+  ; (otherwise, use backpropagate-layer-sigmoid)
+
+  (foreach list-of-nodes target-values [
+    [ann targ-val] ->
+    ask ann [
+      set ann-last-delta-activation (ann-activation - targ-val)
+      set ann-delta-z ann-activation - targ-val
+    ]
+  ])
+end
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+to backpropagate-layer-square [ list-of-nodes ]
+  ; y= z ^ 2
+  ; dy/dz = 2 * z = 2 * sqrt y
+  ; dC/dz = dC/dy * dy/dz
+
+  (foreach list-of-nodes [
+    [ann] ->
+    ask ann [
+      set ann-delta-z 2 * ann-sum-of-weighted-inputs * ann-new-delta-activation ; Quicker?
+      ;set ann-delta-z 2 * (sqrt ann-activation) * ann-new-delta-activation
+    ]
+  ])
+end
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+to update-layer-in-weights [list-of-nodes given-learning-rate given-weight-penalty]
+  foreach list-of-nodes [
+    ann-j ->
+
+    foreach [ann-sorted-in-an-links] of ann-j [
+      anl-ij ->
+      ask anl-ij [
+        if anl-adapts? [ ; If not frozen
+          set anl-weight anl-new-weight given-learning-rate given-weight-penalty
+        ]
+      ]
+    ]
+  ]
+end
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+to-report ann-new-delta-activation
+  ; Node takes its weighted share of error from each of its output nodes
+  set ann-last-delta-activation 
+  
+;  report 
+  sum map [
+    anl ->
+    [anl-weight * [ann-delta-z] of end2] of anl
+  ] ann-sorted-out-an-links
+  
+  report ann-last-delta-activation 
+end
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+to-report ann-new-delta-z-sigmoid [given-delta-activation]
+  ; Assuming sigmoid node
+  report ann-activation * (1.0 - ann-activation) * given-delta-activation
+end
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+to-report anl-new-delta-weight
+  ; Activation runs from end1 to end2
+  ; so backpropagation flows end2 to end1
+  ; delta C / delta w_ij 
+  ; = delta C / delta z_j * delta z_j / delta w_ij 
+  ; = y_i * delta C / delta z_j
+  
+  set anl-last-delta-weight 
+  ;report 
+  (
+    [ann-activation] of end1 *
+    [ann-delta-z] of end2
+  )
+  ;show (word anl-last-delta-weight " = " ([ann-activation] of end1) " * " ([ann-delta-z] of end2))
+
+  report anl-last-delta-weight 
+end
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+to-report anl-weight-change [given-weight-penalty]
+  if (
+    self = first [ann-sorted-in-an-links] of end2 ; Bias node
+  ) [report anl-new-delta-weight]
+  report anl-new-delta-weight + 0.01 * given-weight-penalty * anl-weight
+end
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+to-report anl-new-weight [given-learning-rate given-weight-penalty]
+  report anl-weight - 0.01 * given-learning-rate * (anl-weight-change given-weight-penalty)
+end
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
