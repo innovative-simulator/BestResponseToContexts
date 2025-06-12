@@ -79,6 +79,11 @@ to setup
 ;  set msne current-msne
 ;  set payoffs-list payoffs
   setup-rng "seed-setup"
+
+  if Sync-Alt-Parameters? [
+    sync-alt-parameters
+  ]
+
   setup-people
   rescale-mfi-network-radius
   reposition-c-beliefs
@@ -144,6 +149,27 @@ to setup-world-wraps
   set world-wraps-h? true
   set world-wraps-v? false
 
+end
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+to sync-alt-parameters
+  set alt-number-of-c-beliefs number-of-c-beliefs
+  set alt-memory memory
+  set alt-inertia inertia
+  set alt-base-msne base-msne
+end
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+to-report mid-xcor
+  report mean (list min-pxcor max-pxcor)
+end
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+to-report mid-ycor
+  report mean (list min-pycor max-pycor)
 end
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -301,7 +327,7 @@ to-report new-person
 
     setup-person-attributes
 
-    repeat number-of-c-beliefs [
+    repeat (ifelse-value (ycor >= mid-ycor) [number-of-c-beliefs] [alt-number-of-c-beliefs]) [
       create-c-link-to new-c-belief [
         set hidden? Hide-C-Links?
         set color [color] of end1
@@ -783,13 +809,19 @@ end
 to update-degree-of-belief-against [given-opponent]
   ask pp-current-c-belief [
     set cb-degree 0.01 * (
-      ((100 - memory) * 100 * [pp-action] of given-opponent) +
-      (memory * cb-degree)
+      ((100 - [pp-memory] of myself) * 100 * [pp-action] of given-opponent) +
+      (cb-degree * [pp-memory] of myself)
     )
     c-beliefs-recolor
     set cb-date-of-activation ticks
   ]
 
+end
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+to-report pp-memory
+  report ifelse-value (xcor < mid-xcor) [memory] [alt-memory]
 end
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -811,7 +843,7 @@ to update-relevance-against [given-opponent]
   ask pp-current-c-belief [
     ; Works whether world wraps or not:
     face given-opponent
-    fd (0.01 * (100 - inertia) * relevance-correction * (distance given-opponent))
+    fd (0.01 * (100 - [pp-inertia] of myself) * relevance-correction * (distance given-opponent))
 
     ; More complicated. and slower! (But seems to match the above in effect.)
 ;    setxy (cb-next-xcor xcor ([xcor] of given-opponent) relevance-correction) (cb-next-ycor ycor ([ycor] of given-opponent) relevance-correction)
@@ -823,15 +855,21 @@ end
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+to-report pp-inertia
+  report ifelse-value (xcor < mid-xcor) [inertia] [alt-inertia]
+end
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 to-report cb-next-xcor [a-cor b-cor relevance-sign]
   ; Take a jump from a-cor to b-cor in the shortest direction (depending on world-wraps-_?)
   if world-wraps-h? [
     report wrapped-xcor (
       a-cor +
-      relevance-sign * 0.01 * (100 - inertia) * shortest-jump a-cor b-cor world-width
+      relevance-sign * 0.01 * (100 - [pp-inertia] of myself) * shortest-jump a-cor b-cor world-width
     )
   ]
-  report a-cor + relevance-sign * 0.01 * (100 - inertia) * (b-cor - a-cor)
+  report a-cor + relevance-sign * 0.01 * (100 - [pp-inertia] of myself) * (b-cor - a-cor)
 end
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -841,10 +879,10 @@ to-report cb-next-ycor [a-cor b-cor relevance-sign]
   if world-wraps-v? [
     report wrapped-ycor (
       a-cor +
-      relevance-sign * 0.01 * (100 - inertia) * shortest-jump a-cor b-cor world-height
+      relevance-sign * 0.01 * (100 - [pp-inertia] of myself) * shortest-jump a-cor b-cor world-height
     )
   ]
-  report a-cor + relevance-sign * 0.01 * (100 - inertia) * (b-cor - a-cor)
+  report a-cor + relevance-sign * 0.01 * (100 - [pp-inertia] of myself) * (b-cor - a-cor)
 end
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1807,7 +1845,7 @@ INPUTBOX
 357
 680
 Run-Length
-200000.0
+2000.0
 1
 0
 Number
@@ -3540,6 +3578,137 @@ TEXTBOX
 1083
 Social Network:
 14
+0.0
+1
+
+SLIDER
+365
+1135
+542
+1168
+Alt-Number-of-C-Beliefs
+Alt-Number-of-C-Beliefs
+1
+number-of-people
+4.0
+1
+1
+NIL
+HORIZONTAL
+
+SWITCH
+365
+1095
+537
+1128
+Sync-Alt-Parameters?
+Sync-Alt-Parameters?
+0
+1
+-1000
+
+TEXTBOX
+365
+1045
+585
+1096
+Alternative Parameters for People in Lower or Righthand Half of Space:
+14
+0.0
+1
+
+TEXTBOX
+550
+1090
+660
+1135
+Synchronize Parameters during Setup?
+11
+0.0
+1
+
+SLIDER
+365
+1205
+537
+1238
+Alt-Inertia
+Alt-Inertia
+0
+100
+90.0
+5
+1
+%
+HORIZONTAL
+
+SLIDER
+365
+1170
+537
+1203
+Alt-Memory
+Alt-Memory
+0
+100
+90.0
+5
+1
+%
+HORIZONTAL
+
+TEXTBOX
+550
+1145
+640
+1163
+for Lower Half
+11
+0.0
+1
+
+TEXTBOX
+545
+1180
+695
+1198
+for Righthand Half
+11
+0.0
+1
+
+TEXTBOX
+545
+1210
+695
+1228
+for Righthand Half
+11
+0.0
+1
+
+SLIDER
+365
+1240
+537
+1273
+Alt-Base-MSNE
+Alt-Base-MSNE
+0
+100
+90.0
+5
+1
+%
+HORIZONTAL
+
+TEXTBOX
+545
+1245
+695
+1263
+Not in use yet!
+11
 0.0
 1
 
